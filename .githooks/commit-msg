@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# .githooks/commit-msg
+# 커밋 메시지 형식 강제 검증
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Merge, Revert, fixup 커밋은 검사 생략
+if echo "$COMMIT_MSG" | grep -qE "^(Merge|Revert|fixup!|squash!)"; then
+  exit 0
+fi
+
+VALID_TYPES="feat|fix|refactor|docs|test|chore|perf"
+VALID_SCOPES="filter|detection|decision|feedback|log|infra|model|api|dataset|docs|config"
+TITLE_PATTERN="^($VALID_TYPES)\(($VALID_SCOPES)\): .{1,50}$"
+TITLE=$(echo "$COMMIT_MSG" | head -1)
+
+if ! echo "$TITLE" | grep -qE "$TITLE_PATTERN"; then
+  echo ""
+  echo "❌  커밋 메시지 형식 오류"
+  echo ""
+  echo "    올바른 형식: <type>(<scope>): <제목>"
+  echo "    예시:        feat(filter): WafFilter body 캐싱 처리 구현"
+  echo ""
+  echo "    허용 type:   feat fix refactor docs test chore perf"
+  echo "    허용 scope:  filter detection decision feedback log"
+  echo "                 infra model api dataset docs config"
+  echo ""
+  echo "    현재 제목: \"$TITLE\""
+  echo ""
+  exit 1
+fi
+
+# 제목 다음 빈 줄 확인
+LINE_COUNT=$(echo "$COMMIT_MSG" | wc -l)
+if [ "$LINE_COUNT" -gt 1 ]; then
+  SECOND_LINE=$(echo "$COMMIT_MSG" | sed -n '2p')
+  if [ -n "$SECOND_LINE" ]; then
+    echo ""
+    echo "❌  제목과 본문 사이에 빈 줄이 필요합니다"
+    echo ""
+    exit 1
+  fi
+fi
+
+# 이슈 번호 권장 (경고만, 차단 안함)
+if ! echo "$COMMIT_MSG" | grep -qE "(Closes|Refs|Fixes) #[0-9]+"; then
+  echo ""
+  echo "💡  이슈 번호를 연결하면 추적이 쉬워집니다 (예: Closes #12)"
+  echo ""
+fi
+
+exit 0

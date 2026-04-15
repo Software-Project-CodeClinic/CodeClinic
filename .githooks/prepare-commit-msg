@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# .githooks/prepare-commit-msg
+# 커밋 메시지 템플릿 자동 삽입
+# 브랜치명에서 type/scope를 추론해 제목 초안 제공
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# 기존 메시지가 있으면 (--amend, merge 등) 건드리지 않음
+if [ -n "$COMMIT_SOURCE" ]; then
+  exit 0
+fi
+
+BRANCH=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
+
+# 브랜치에서 type/scope 추론
+# feat/backend/waf-filter → feat(filter):
+# feat/ai/fastapi-server  → feat(api):
+TYPE=""
+SCOPE=""
+
+if echo "$BRANCH" | grep -qE "^feat/backend/"; then
+  TYPE="feat"
+  FEATURE=$(echo "$BRANCH" | sed 's|feat/backend/||')
+  # 기능명으로 scope 추론
+  case "$FEATURE" in
+    *filter*)     SCOPE="filter" ;;
+    *feedback*)   SCOPE="feedback" ;;
+    *decision*)   SCOPE="decision" ;;
+    *detection*)  SCOPE="detection" ;;
+    *log*)        SCOPE="log" ;;
+    *infra*|*docker*|*db*) SCOPE="infra" ;;
+    *)            SCOPE="filter" ;;
+  esac
+elif echo "$BRANCH" | grep -qE "^feat/ai/"; then
+  TYPE="feat"
+  FEATURE=$(echo "$BRANCH" | sed 's|feat/ai/||')
+  case "$FEATURE" in
+    *fastapi*|*server*) SCOPE="api" ;;
+    *model*|*train*)    SCOPE="model" ;;
+    *dataset*|*data*)   SCOPE="dataset" ;;
+    *)                  SCOPE="model" ;;
+  esac
+elif echo "$BRANCH" | grep -qE "^fix/backend/"; then
+  TYPE="fix"
+  SCOPE="filter"
+elif echo "$BRANCH" | grep -qE "^fix/ai/"; then
+  TYPE="fix"
+  SCOPE="model"
+elif echo "$BRANCH" | grep -qE "^hotfix/"; then
+  TYPE="fix"
+  SCOPE="infra"
+fi
+
+if [ -n "$TYPE" ] && [ -n "$SCOPE" ]; then
+  # 기존 내용 앞에 템플릿 삽입
+  EXISTING=$(cat "$COMMIT_MSG_FILE")
+  cat > "$COMMIT_MSG_FILE" << TEMPLATE
+$TYPE($SCOPE): 
+
+# 본문: 무엇을, 왜 변경했는지 설명 (어떻게보다 왜에 집중)
+# 고려한 대안이나 트레이드오프가 있다면 함께 기술
+#
+# Closes #이슈번호
+#
+# ── 커밋 메시지 규칙 ───────────────────────────────────────────
+# 형식: <type>(<scope>): <제목 50자 이하>
+# type:  feat fix refactor docs test chore perf
+# scope: filter detection decision feedback log infra
+#        model api dataset docs config
+# ──────────────────────────────────────────────────────────────
+$EXISTING
+TEMPLATE
+fi
+
+exit 0

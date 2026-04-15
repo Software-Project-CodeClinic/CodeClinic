@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# .githooks/pre-push
+# main 브랜치 직접 push 차단
+# feature 브랜치에서 main으로의 push도 차단 (PR 경유 강제)
+
+CURRENT_BRANCH=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
+REMOTE="$1"
+
+while read LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+  TARGET_BRANCH=$(echo "$REMOTE_REF" | sed 's|refs/heads/||')
+
+  # main 브랜치에 직접 push 차단
+  if [ "$TARGET_BRANCH" = "main" ]; then
+    echo ""
+    echo "❌  main 브랜치에 직접 push할 수 없습니다"
+    echo ""
+    echo "    PR을 통해 merge해 주세요:"
+    echo "    1. GitHub에서 PR 생성"
+    echo "    2. 상대방 코드 리뷰"
+    echo "    3. Squash or Merge"
+    echo ""
+    echo "    hotfix라면: hotfix/<이름> 브랜치 → PR → main"
+    echo ""
+    exit 1
+  fi
+
+  # 브랜치 네이밍 규칙 확인 (main, hotfix/* 제외)
+  if [ "$TARGET_BRANCH" != "main" ]; then
+    VALID_PATTERN="^(feat/(backend|ai)/|fix/(backend|ai)/|hotfix/|chore/|docs/)"
+    if ! echo "$TARGET_BRANCH" | grep -qE "$VALID_PATTERN"; then
+      echo ""
+      echo "❌  브랜치 네이밍 규칙 위반: $TARGET_BRANCH"
+      echo ""
+      echo "    올바른 형식:"
+      echo "    feat/backend/<기능명>    feat/ai/<기능명>"
+      echo "    fix/backend/<버그명>     fix/ai/<버그명>"
+      echo "    hotfix/<긴급수정명>"
+      echo ""
+      exit 1
+    fi
+  fi
+done
+
+exit 0
