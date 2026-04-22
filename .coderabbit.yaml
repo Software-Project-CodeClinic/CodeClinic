@@ -1,0 +1,85 @@
+language: "ko-KR"
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+  path_filters:
+    - "!**/*.lock"
+    - "!**/generated/**"
+
+  path_instructions:
+    - path: "backend/src/**/filter/**"
+      instructions: |
+        WebFlux GlobalFilter 구현을 검토한다.
+        - block() / blockGet() 호출이 있으면 반드시 지적 (이벤트 루프 블로킹)
+        - cacheRequestBody 없이 body를 직접 읽는 코드는 결함으로 표시
+        - order 값이 -100인지 확인
+
+    - path: "backend/src/**/detection/**"
+      instructions: |
+        FeatureExtractor와 InferenceClient를 검토한다.
+        - Raw Input 정규화(URL decode, HTML entity decode, NFKC) 코드가 있으면 지적
+        - InferenceClient timeout이 50ms인지, onErrorReturn으로 Fail-Open 처리되는지 확인
+        - WebClient 체인에서 block() 사용 금지
+
+    - path: "backend/src/**/feedback/**"
+      instructions: |
+        Feedback Bridge (Cold Path) 를 검토한다.
+        - SemgrepRunner에서 ProcessBuilder 사용 시 stdout/stderr를 별도 스레드로 소비하는지 확인
+          (미소비 시 OS 파이프 버퍼 가득 차 hang 발생)
+        - @TransactionalEventListener 없이 직접 호출하면 Hot Path와 결합되므로 지적
+
+    - path: "backend/src/**"
+      instructions: |
+        Spring Boot / WebFlux 백엔드 코드를 검토한다.
+        - SQL 쿼리에 파라미터 바인딩 없이 문자열 연결이 있으면 반드시 지적 (CWE-89)
+        - @Async 메서드가 void 또는 Future 반환인지 확인
+        - application.yml 외부화 없이 임계값을 하드코딩하면 지적
+
+    - path: "ai-server/**"
+      instructions: |
+        FastAPI + DistilBERT 추론 서버를 검토한다.
+        - /predict 응답이 50ms 이내 가능한 구조인지 확인
+        - 모델 로딩이 startup 시점(@app.on_event("startup"))에 완료되는지 확인
+        - classificationScore, cweLabel 필드명이 인터페이스 계약과 일치하는지 확인
+
+    - path: ".claude/docs/shared/interface-contract.md"
+      instructions: |
+        인터페이스 계약 변경이므로 반드시 양쪽(백엔드·AI) approve가 필요함을 코멘트로 명시한다.
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  learnings:
+    scope: local
+  issues:
+    scope: local
+
+code_generation:
+  docstrings:
+    enabled: true
+    language: "ko-KR"
+  unit_tests:
+    enabled: true
+    path_instructions:
+      - path: "backend/src/**/decision/**"
+        instructions: |
+          DecisionEngine의 BLOCK/MONITOR/PASS 분기를 각각 커버하는
+          단위 테스트를 JUnit5 + Mockito로 생성한다.
+          임계값은 application.yml 기준(block=0.8, monitor=0.5)으로 경계값 테스트 포함.
+      - path: "backend/src/**/detection/**"
+        instructions: |
+          FeatureExtractor 테스트 시 URL 인코딩된 입력(%27, %3C 등)을
+          정규화하지 않고 Raw 그대로 전달하는지 검증하는 케이스를 포함한다.
