@@ -7,46 +7,34 @@ Spring Cloud Gateway의 Feature Extractor가 파싱한 요청을 받아 공격 �
 
 ## 모델 다운로드
 
-학습 실험은 총 4개 케이스(A~D)로 진행됐으며, **Case C와 Case D** 두 가지 버전을 제공합니다.
+학습 실험은 총 6개 케이스(A~F)로 진행됐으며, **Case F** 를 최종 채택합니다.
 
 | 케이스 | 특징 | 다운로드 |
 |--------|------|----------|
-| **Case C** | 탐지율 우선. CSIC2010 벤치마크 기준 DR 96.4%, FPR 0.54% | [Google Drive](https://drive.google.com/drive/folders/1jqbx1hZFOTB-gwlIYlu9Rg6bgZnNx_oZ?usp=drive_link) |
-| **Case D** | 오탐율 우선. FPR 0.13% (Case C 대비 4배 감소), 외부 도메인 일반화 개선 | [Google Drive](https://drive.google.com/drive/folders/1GcuYr7x74C749QlLWVHb9DtBTVMWBC3g?usp=drive_link) |
+| **Case F** ✅ 최종 채택 | DR 97.28%, FPR 0.27%, OOD FPR 0.14%, OOD ROC-AUC 0.9992 | [Google Drive](https://drive.google.com/drive/folders/1YZRzybdKmJeMMiXMVyz_Pe6gvmzdD01m?usp=sharing) |
 
-### 케이스 선택 기준
+> **Case F 선택 이유**: A~F 중 유일하게 CSIC2010(in-domain)과 VulnBank(OOD) 양쪽 기준을 동시에 충족.  
+> VulnBank benign 1,000건을 Normal 학습에 투입해 OOD FPR을 88% → 0.14%로 대폭 감소시켰습니다.
 
-```
-Case C 선택 시: 탐지 누락(FN)을 최소화해야 할 때
-Case D 선택 시: 정상 트래픽 오차단(FP)을 최소화해야 할 때 (권장)
-```
+### 성능 지표
 
-> **현재 권장: Case D**  
-> Case C는 학습 데이터의 정상 트래픽이 `/tienda1/...` 경로에 편중되어  
-> 다른 도메인에서 정상 요청을 공격으로 잘못 분류하는 도메인 편향이 있습니다.  
-> Case D는 합성 정상 데이터를 추가해 외부 도메인 오탐율을 대폭 개선했습니다.
-
-### 성능 지표 (CSIC2010 held-out test, n=2,477)
-
-| 지표 | Case C | Case D |
-|------|--------|--------|
-| Detection Rate (Recall) | **96.42%** | 94.97% |
-| False Positive Rate | 0.54% | **0.13%** |
-| Precision | 99.76% | 99.94% |
-| F1 (Attack) | 0.9806 | 0.9739 |
-| ROC-AUC | 0.9938 | 0.9924 |
+| 지표 | CSIC2010 (in-domain) | VulnBank OOD (held-out) |
+|------|---------------------|------------------------|
+| Detection Rate | **97.28%** | 91.65% |
+| False Positive Rate | 0.27% | **0.14%** |
+| Precision | 99.88% | **99.66%** |
+| F1-Attack | **98.57%** | 95.48% |
+| ROC-AUC | 0.9953 | **0.9992** |
 
 ### 폴더 구조 (다운로드 후)
 
-```
-case_c/ (또는 case_d/)
-├── final/                  ← 추론에 필요한 파일 (이것만 사용)
-│   ├── config.json
-│   ├── model.safetensors   # 256MB
-│   ├── tokenizer.json
-│   └── tokenizer_config.json
-├── checkpoint-*/           ← 학습 중간 체크포인트 (추론 불필요)
-└── eval_csic/              ← 평가 결과 로그
+```text
+case_f/
+└── final/                  ← 추론에 필요한 파일 (이것만 사용)
+    ├── config.json
+    ├── model.safetensors   # 256MB
+    ├── tokenizer.json
+    └── tokenizer_config.json
 ```
 
 서버 실행 시 **`final/` 디렉토리 경로**를 모델 경로로 지정하세요.
@@ -59,7 +47,7 @@ case_c/ (또는 case_d/)
 
 모델은 다음 형식의 **단일 텍스트 문자열**을 입력으로 받습니다.
 
-```
+```text
 {METHOD} {URI}
 {BODY}
 ```
@@ -72,31 +60,31 @@ case_c/ (또는 case_d/)
 
 ### GET 요청 예시
 
-```
+```text
 GET /products?id=1 OR 1=1--&sort=name
 ```
 
-```
+```text
 GET /search?q=<script>alert(1)</script>&page=1
 ```
 
-```
+```text
 GET /download?file=../../etc/passwd&token=abc
 ```
 
 ### POST 요청 예시
 
-```
+```text
 POST /login
 username=admin' OR '1'='1--&password=test
 ```
 
-```
+```text
 POST /comment
 content=<img src=x onerror=alert(1)>&post_id=5
 ```
 
-```
+```text
 POST /system/run
 cmd=ls; cat /etc/passwd&timeout=30
 ```
@@ -174,7 +162,7 @@ from pydantic import BaseModel
 from src.predict import WAFPredictor
 
 app = FastAPI()
-predictor = WAFPredictor("./models/case_d/final")  # 서버 시작 시 1회 로드
+predictor = WAFPredictor("./models/case_f/final")  # 서버 시작 시 1회 로드
 
 CWE_MAP = {
     "Normal": "NORMAL",
@@ -216,7 +204,7 @@ def parse_raw_input(raw: str) -> tuple[str, str, str]:
 ```python
 from src.predict import WAFPredictor
 
-predictor = WAFPredictor("./models/case_d/final")
+predictor = WAFPredictor("./models/case_f/final")
 
 # 단건 추론
 result = predictor.predict(
@@ -238,7 +226,7 @@ results = predictor.predict_batch([
 
 ## 의존성
 
-```
+```text
 torch>=2.0
 transformers>=4.30
 fastapi
@@ -249,6 +237,6 @@ uvicorn
 
 ## 참고
 
-- 모델 학습 실험 상세: `waf_model/EXPERIMENT_REPORT.md`, `CASE_D_REPORT.md`
+- 모델 학습 실험 상세: `waf_model/CASE_F_REPORT.md`
 - 인터페이스 계약 (변경 시 양쪽 합의 필요): `.claude/docs/shared/interface-contract.md`
-- 담당: 영현 (`feat/ai/*`)
+- 상세 인수인계 문서: `.claude/docs/ai/model-handoff.md`
