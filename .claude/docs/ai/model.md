@@ -9,8 +9,11 @@
 | 베이스 모델 | `distilbert-base-uncased` |
 | 분류 클래스 | 5클래스 (NORMAL, CWE-89, CWE-79, CWE-78, CWE-22) |
 | 학습 환경 | RTX 3060 12GB, Ubuntu 24.04 (WSL2), PyTorch 2.5.1 |
-| 하이퍼파라미터 | max_length=128, lr=2e-5, batch=16, epoch=5 |
-| 채택 케이스 | Case C (DR 96.42%, FPR 0.54%, Macro F1 0.979) |
+| 하이퍼파라미터 | max_length=256, lr=2e-5, batch=64, epoch=9 (early stopping) |
+| 채택 케이스 | **Case F** (DR 97.28%, FPR 0.27%, OOD FPR 0.14%, OOD ROC-AUC 0.9992) |
+| 모델 경로 | `/home/gyh3257/waf_model/models/case_f/final/` |
+
+> 백엔드 연동 상세 → [model-handoff.md](model-handoff.md)
 
 ## FastAPI 서버
 
