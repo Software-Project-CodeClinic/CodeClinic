@@ -28,7 +28,7 @@ Spring Cloud Gateway의 Feature Extractor가 파싱한 요청을 받아 공격 �
 
 ### 폴더 구조 (다운로드 후)
 
-```
+```text
 case_f/
 └── final/                  ← 추론에 필요한 파일 (이것만 사용)
     ├── config.json
@@ -47,7 +47,7 @@ case_f/
 
 모델은 다음 형식의 **단일 텍스트 문자열**을 입력으로 받습니다.
 
-```
+```text
 {METHOD} {URI}
 {BODY}
 ```
@@ -60,31 +60,31 @@ case_f/
 
 ### GET 요청 예시
 
-```
+```text
 GET /products?id=1 OR 1=1--&sort=name
 ```
 
-```
+```text
 GET /search?q=<script>alert(1)</script>&page=1
 ```
 
-```
+```text
 GET /download?file=../../etc/passwd&token=abc
 ```
 
 ### POST 요청 예시
 
-```
+```text
 POST /login
 username=admin' OR '1'='1--&password=test
 ```
 
-```
+```text
 POST /comment
 content=<img src=x onerror=alert(1)>&post_id=5
 ```
 
-```
+```text
 POST /system/run
 cmd=ls; cat /etc/passwd&timeout=30
 ```
@@ -226,7 +226,7 @@ results = predictor.predict_batch([
 
 ## 의존성
 
-```
+```text
 torch>=2.0
 transformers>=4.30
 fastapi

@@ -23,7 +23,7 @@
 | Val | 923 | 1,242 | 756 | 642 | 649 | 4,212 |
 | Test | 747 | 1,622 | 96 | 0 | 12 | 2,477 |
 
-Normal 4,569 = CSIC2010 3,420 + 합성 144건 + VulnBank benign 1,000건
+Normal 4,569 = CSIC2010 3,420 + 합성 144건 + VulnBank benign 1,000건 (merge 중복 제거 5건 포함)
 
 **데이터 소스**
 - `CSIC2010`: `/home/gyh3257/waf_model/data/csic_normal.txt`, `csic_attack.txt`

@@ -34,7 +34,7 @@ HTTP 요청 문자열을 입력받아 **공격 유형을 5개 클래스로 분�
 
 ## 2. 모델 파일 구조
 
-```
+```text
 waf_model/
 ├── models/
 │   └── case_f/
@@ -92,7 +92,7 @@ Case F는 세 가지 데이터 소스를 결합해 학습했다.
 
 ### 3-2. 데이터 전처리 파이프라인
 
-```
+```text
 원본 데이터 (CSIC2010 txt, SecLists txt, VulnBank csv)
        ↓
 ① NFKD 정규화  — é→e, ó→o, ñ→n (비ASCII 문자를 ASCII 기저 문자로 변환)
@@ -117,6 +117,8 @@ CSV (text, label) 형태로 저장
 | CMDi | 3,000 | 1.331 |
 | Path | 3,053 | 1.308 |
 
+> Normal 4,569 = CSIC2010 3,420 + 합성 144건 + VulnBank benign 1,000건 + merge 중복 제거 5건
+
 ---
 
 ## 4. 입력 포맷 (백엔드 → AI 서버)
@@ -125,7 +127,7 @@ CSV (text, label) 형태로 저장
 
 ### 4-1. API 요청
 
-```
+```http
 POST http://localhost:8000/predict
 Content-Type: application/json
 ```
@@ -155,10 +157,10 @@ String rawInput = method + " " + uri + " HTTP/1.1\r\n"
 ```
 
 **실제 학습 데이터의 텍스트 포맷:**
-```
+```text
 GET /products?id=1 OR 1=1--&sort=name
 ```
-```
+```text
 POST /login
 username=admin' OR '1'='1&password=test
 ```
@@ -214,7 +216,7 @@ label_id = probs.argmax().item()
 
 `cweLabel != "NORMAL"` 이면 공격으로 판정한다. `classificationScore`는 임계값 기반 세부 제어에 사용할 수 있다.
 
-```
+```text
 classificationScore = 0.97, cweLabel = "CWE-89"  → BLOCK (SQLi 공격, 신뢰도 97%)
 classificationScore = 0.52, cweLabel = "CWE-89"  → MONITOR or BLOCK (경계값 — yml 임계값 설정)
 classificationScore = 0.98, cweLabel = "NORMAL"  → PASS (정상, 신뢰도 98%)
@@ -301,7 +303,7 @@ result = predictor.predict(method='GET', uri='/products?id=1 OR 1=1--', body='')
 
 ## 9. 모델 파일 위치
 
-```
+```bash
 # 학습 환경 (WSL2)
 /home/gyh3257/waf_model/models/case_f/final/
 
