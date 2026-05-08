@@ -46,6 +46,8 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
+    // 컨텍스트 로드 테스트용 인메모리 DB (PostgreSQL 없이 contextLoads 통과)
+    testRuntimeOnly("com.h2database:h2")
 }
 
 dependencyManagement {
