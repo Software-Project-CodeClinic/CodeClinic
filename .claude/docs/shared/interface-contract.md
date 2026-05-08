@@ -77,7 +77,8 @@ public record FeatureVector(
 `raw_input` 조합 방식:
 ```
 {method} {uri} HTTP/1.1\r\n
-{헤더들}\r\n
+User-Agent: {userAgent}\r\n
+Content-Type: {contentType}\r\n
 \r\n
 {rawBody}
 ```

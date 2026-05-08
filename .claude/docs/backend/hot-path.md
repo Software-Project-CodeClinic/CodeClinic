@@ -21,8 +21,8 @@ public class WafFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        return ServerWebExchangeUtils.cacheRequestBody(exchange, req ->
-            Mono.just(featureExtractor.extract(req))
+        return ServerWebExchangeUtils.cacheRequestBody(exchange, cachedRequest ->
+            Mono.just(featureExtractor.extract(exchange))   // ServerWebExchange 전달 (CACHED_REQUEST_BODY_ATTR 접근)
                 .flatMap(inferenceClient::score)
                 .flatMap(resp -> decisionEngine.decide(exchange, chain, resp))
         );
@@ -67,8 +67,8 @@ waf.threshold.monitor: 0.5
 
 | 판정 | 조건 | 처리 |
 |------|------|------|
-| BLOCK | score > 0.8 | 403 즉시 반환 + 공격 로그 |
-| MONITOR | 0.5 < score ≤ 0.8 | 통과 + 의심 로그 |
-| PASS | score ≤ 0.5 | upstream 프록시 |
+| BLOCK | score > 0.8 | 403 즉시 반환 (빈 바디) + attack_logs INSERT (verdict=BLOCK) |
+| MONITOR | 0.5 < score ≤ 0.8 | upstream 통과 + attack_logs INSERT (verdict=MONITOR) |
+| PASS | score ≤ 0.5 | upstream 프록시, 로그 없음 |
 
 - CWE 레이블은 모델의 argmax 출력을 그대로 사용 (별도 분류 로직 없음)

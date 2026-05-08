@@ -42,12 +42,14 @@ CREATE INDEX ON attack_logs (source_ip, timestamp DESC);
 ## 패키지 구조
 
 ```
-com.waf
+com.codeclinic.gateway
 ├── filter
 │   └── WafFilter.java
 ├── detection
 │   ├── FeatureExtractor.java
-│   └── InferenceClient.java
+│   ├── FeatureVector.java
+│   ├── InferenceClient.java
+│   └── InferenceResponse.java
 ├── decision
 │   └── DecisionEngine.java
 ├── log
@@ -60,8 +62,11 @@ com.waf
 │   └── RecommendationBuilder.java
 ├── api
 │   └── DashboardController.java
-└── config
-    └── WebClientConfig.java
+├── config
+│   └── WebClientConfig.java
+└── stub
+    ├── StubInferenceClient.java   ← Week 2에 삭제
+    └── StubDecisionEngine.java    ← Week 2에 삭제
 ```
 
 ## application.yml 주요 설정
