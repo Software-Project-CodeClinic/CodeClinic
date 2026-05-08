@@ -1,12 +1,20 @@
 package com.codeclinic.gateway.config;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.function.client.WebClient;
 
-/**
- * WebClient Bean 설정.
- * Week 2에서 InferenceClient용 WebClient (baseUrl, timeout) 빈 등록 예정.
- */
 @Configuration
+@RequiredArgsConstructor
 public class WebClientConfig {
-    // TODO(Week 2): @Bean WebClient inferenceWebClient(WafProperties props)
+
+    private final WafProperties wafProperties;
+
+    @Bean
+    public WebClient inferenceWebClient() {
+        return WebClient.builder()
+                .baseUrl(wafProperties.aiServer().url())
+                .build();
+    }
 }
