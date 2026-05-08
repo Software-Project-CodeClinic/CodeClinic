@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: codeclinic-gateway
+
+  # JDBC — AttackLogService는 @Async 스레드풀에서 실행되므로 블로킹 허용
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:waf}
+    username: ${DB_USER:waf}
+    password: ${DB_PASSWORD:waf}
+
+  cloud:
+    gateway:
+      routes:
+        # 개발 환경 upstream 더미 — Week 4에서 실제 서비스 URI로 교체
+        - id: upstream-dummy
+          uri: http://httpbin.org
+          predicates:
+            - Path=/**
+
+server:
+  port: 8080
+
+# ── WAF 설정 ────────────────────────────────────────────────────────────
+waf:
+  threshold:
+    block: 0.8    # score > 0.8  → BLOCK (403 즉시 반환)
+    monitor: 0.5  # score > 0.5  → MONITOR (통과 + 의심 로그)
+                  # score ≤ 0.5  → PASS (upstream 프록시)
+  ai-server:
+    url: ${AI_SERVER_URL:http://localhost:8000}
+    timeout-ms: 50  # 초과 시 Fail-Open (classificationScore=0.0, cweLabel="NORMAL")
+  source:
+    root: src/main/java  # SourceLocator가 .java 파일 탐색 시 기준 경로
+
+# Actuator 헬스체크 노출 (docker compose healthcheck 연동)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
