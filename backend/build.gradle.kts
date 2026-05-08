@@ -46,6 +46,8 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
+    // WireMock: WebClientInferenceClient 통합 테스트용 HTTP 목 서버
+    testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock")
     // 컨텍스트 로드 테스트용 인메모리 DB (PostgreSQL 없이 contextLoads 통과)
     testRuntimeOnly("com.h2database:h2")
 }
