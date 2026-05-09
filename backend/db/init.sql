@@ -1,6 +1,9 @@
 -- CodeClinic WAF — TimescaleDB 초기화 스크립트
 -- 볼륨이 처음 생성될 때 한 번만 실행됨 (docker-entrypoint-initdb.d)
 
+-- TimescaleDB 확장 활성화 (Testcontainers: timescale/timescaledb 이미지에 사전 설치됨)
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+
 -- ── 공격 로그 테이블 ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS attack_logs (
     id          UUID             NOT NULL DEFAULT gen_random_uuid(),
