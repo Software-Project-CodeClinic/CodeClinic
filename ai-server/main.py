@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,7 +6,7 @@ from pydantic import BaseModel
 
 from predict import WAFPredictor
 
-MODEL_PATH = "models/case_f/final"
+MODEL_PATH = os.environ.get("MODEL_PATH", "models/case_f/final")
 _predictor: WAFPredictor | None = None
 
 
@@ -26,6 +27,11 @@ class PredictRequest(BaseModel):
 class PredictResponse(BaseModel):
     classificationScore: float
     cweLabel: str
+
+
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
 
 
 @app.post("/predict", response_model=PredictResponse)

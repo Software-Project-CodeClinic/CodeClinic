@@ -7,6 +7,8 @@ services:
   #   depends_on:
   #     timescaledb:
   #       condition: service_healthy
+  #     fastapi:
+  #       condition: service_healthy
   #   environment:
   #     DB_USER: ${POSTGRES_USER}
   #     DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -16,6 +18,14 @@ services:
     build: ./ai-server
     ports:
       - "8000:8000"
+    environment:
+      MODEL_PATH: ${MODEL_PATH:-models/case_f/final}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
   # ───────────────────────────────────────────────────────────────────
 
   timescaledb:
