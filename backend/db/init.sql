@@ -21,9 +21,8 @@ CREATE TABLE IF NOT EXISTS attack_logs (
 -- hypertable 변환: timestamp 기준으로 자동 파티셔닝 (시계열 범위 쿼리 최적화)
 SELECT create_hypertable('attack_logs', 'timestamp');
 
--- id 단독 UNIQUE 인덱스: recommendations 테이블의 FK 참조를 허용하기 위해 필요
--- (hypertable PK는 복합키(id, timestamp)이므로 id만으로는 FK 참조 불가)
-CREATE UNIQUE INDEX ON attack_logs (id);
+-- hypertable UNIQUE 인덱스는 파티션 키(timestamp)를 반드시 포함해야 한다
+CREATE UNIQUE INDEX ON attack_logs (id, timestamp);
 
 -- 대시보드 조회 패턴에 맞는 복합 인덱스
 CREATE INDEX ON attack_logs (cwe_type, timestamp DESC);
@@ -32,7 +31,7 @@ CREATE INDEX ON attack_logs (source_ip, timestamp DESC);
 -- ── 권고사항 테이블 (Feedback Bridge 결과 저장) ──────────────────────
 CREATE TABLE IF NOT EXISTS recommendations (
     id              BIGSERIAL    PRIMARY KEY,
-    attack_log_id   UUID         NOT NULL REFERENCES attack_logs (id),
+    attack_log_id   UUID         NOT NULL,  -- 참조 무결성은 애플리케이션 레벨에서 보장 (hypertable FK 제약 불가)
     cwe_type        TEXT         NOT NULL,
     file_path       TEXT,                     -- SourceLocator가 찾은 .java 파일 경로
     line_number     INT,                      -- Semgrep이 탐지한 취약 라인 번호

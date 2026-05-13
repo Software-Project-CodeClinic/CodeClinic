@@ -63,7 +63,7 @@ public class DecisionEngineImpl implements DecisionEngine {
                 ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()
                 : "unknown";
 
-        AttackLog log = AttackLog.builder()
+        AttackLog entry = AttackLog.builder()
                 .id(UUID.randomUUID())
                 .timestamp(Instant.now())
                 .sourceIp(remoteAddress)
@@ -75,6 +75,11 @@ public class DecisionEngineImpl implements DecisionEngine {
                 .rawInput("")   // FeatureExtractor에서 buildRawInput()로 구성 가능하나 hot-path 지연 최소화를 위해 생략
                 .build();
 
-        attackLogService.save(log);
+        try {
+            attackLogService.save(entry);
+        } catch (Exception e) {
+            log.warn("saveLog submit failed, ignoring to protect Hot Path [{}]: {}",
+                    e.getClass().getSimpleName(), e.getMessage());
+        }
     }
 }

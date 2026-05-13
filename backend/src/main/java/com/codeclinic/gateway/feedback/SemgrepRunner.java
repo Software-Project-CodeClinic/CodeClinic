@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -55,9 +56,14 @@ public class SemgrepRunner {
             CompletableFuture<String> stdoutFuture = readAsync(process.getInputStream());
             CompletableFuture<String> stderrFuture  = readAsync(process.getErrorStream());
 
-            process.waitFor();
-            String stdout = stdoutFuture.get();
-            stderrFuture.get(); // stderr 내용 소비 (결과에는 미사용)
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                log.warn("SemgrepRunner: process timed out after 30s, killed");
+                return List.of();
+            }
+            String stdout = stdoutFuture.get(5, TimeUnit.SECONDS);
+            stderrFuture.get(5, TimeUnit.SECONDS);
 
             return parseFindings(stdout);
 

@@ -1,7 +1,10 @@
 package com.codeclinic.gateway.api;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -18,6 +21,7 @@ import java.util.UUID;
  *
  * 모든 메서드는 JDBC 블로킹 호출을 Schedulers.boundedElastic()으로 오프로드한다.
  */
+@Validated
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -31,8 +35,8 @@ public class DashboardController {
             @RequestParam(required = false) String  verdict,
             @RequestParam(required = false) String  from,
             @RequestParam(required = false) String  to,
-            @RequestParam(defaultValue = "0")  int  page,
-            @RequestParam(defaultValue = "20") int  size) {
+            @RequestParam(defaultValue = "0")  @Min(0)          int  page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int  size) {
         Instant fromInstant = from != null ? Instant.parse(from) : null;
         Instant toInstant   = to   != null ? Instant.parse(to)   : null;
         return Mono.fromCallable(

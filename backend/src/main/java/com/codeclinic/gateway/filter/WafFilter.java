@@ -37,13 +37,13 @@ public class WafFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // cacheRequestBody: body를 exchange attribute에 버퍼링한 뒤 mutated request를 람다에 전달.
-        // 이 래핑 없이 body를 읽으면 downstream(upstream 서비스)에 빈 body가 전달된다.
-        // block() 절대 사용 금지 — WebFlux 이벤트 루프 블로킹 발생.
-        return ServerWebExchangeUtils.cacheRequestBody(exchange, cachedRequest ->
-                Mono.just(featureExtractor.extract(exchange))   // exchange로 attribute 접근
-                    .flatMap(inferenceClient::score)             // AI 추론 (50ms timeout, Fail-Open)
-                    .flatMap(resp -> decisionEngine.decide(exchange, chain, resp)) // BLOCK/MONITOR/PASS
-        );
+        // cachedRequest를 request로 교체한 exchange를 downstream에 전달해야
+        // upstream 서비스가 이미 소비된 원본 body 대신 캐시된 body를 다시 읽을 수 있다.
+        return ServerWebExchangeUtils.cacheRequestBody(exchange, cachedRequest -> {
+            ServerWebExchange cachedExchange = exchange.mutate().request(cachedRequest).build();
+            return Mono.just(featureExtractor.extract(cachedExchange))
+                    .flatMap(inferenceClient::score)
+                    .flatMap(resp -> decisionEngine.decide(cachedExchange, chain, resp));
+        });
     }
 }

@@ -34,7 +34,8 @@ public class FeatureExtractor {
         String contentType = firstHeader(request, HttpHeaders.CONTENT_TYPE);
         String rawBody     = extractRawBody(exchange);
 
-        return new FeatureVector(method, uri, userAgent, contentType, rawBody, rawBody.length());
+        return new FeatureVector(method, uri, userAgent, contentType, rawBody,
+                rawBody.getBytes(StandardCharsets.UTF_8).length);
     }
 
     /**
