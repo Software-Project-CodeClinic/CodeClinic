@@ -12,13 +12,10 @@ services:
   #     DB_PASSWORD: ${POSTGRES_PASSWORD}
   #     AI_SERVER_URL: http://fastapi:8000
   #
-  # fastapi:
-  #   build: ./ai-server
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     timescaledb:
-  #       condition: service_healthy
+  fastapi:
+    build: ./ai-server
+    ports:
+      - "8000:8000"
   # ───────────────────────────────────────────────────────────────────
 
   timescaledb:
