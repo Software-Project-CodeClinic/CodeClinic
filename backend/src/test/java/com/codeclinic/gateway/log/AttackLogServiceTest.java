@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AttackLogServiceTest {
@@ -26,6 +27,7 @@ class AttackLogServiceTest {
     @Test
     void save_persists_log_to_repository() {
         AttackLog log = buildLog("MONITOR", "CWE-79");
+        when(repository.save(log)).thenReturn(log);
 
         service.save(log);
 
@@ -35,6 +37,7 @@ class AttackLogServiceTest {
     @Test
     void save_publishes_attack_log_saved_event_after_insert() {
         AttackLog log = buildLog("MONITOR", "CWE-79");
+        when(repository.save(log)).thenReturn(log);
 
         service.save(log);
 
@@ -52,6 +55,7 @@ class AttackLogServiceTest {
     @Test
     void save_block_log_publishes_event_with_block_verdict() {
         AttackLog log = buildLog("BLOCK", "CWE-89");
+        when(repository.save(log)).thenReturn(log);
 
         service.save(log);
 
@@ -62,10 +66,10 @@ class AttackLogServiceTest {
     }
 
     @Test
-    void save_event_attack_log_id_matches_entity_id() {
-        UUID expectedId = UUID.randomUUID();
-        AttackLog log = AttackLog.builder()
-                .id(expectedId)
+    void save_event_uses_id_from_saved_entity_not_input() {
+        UUID assignedId = UUID.randomUUID();
+        AttackLog input = AttackLog.builder()
+                .id(null)
                 .timestamp(Instant.now())
                 .sourceIp("10.0.0.1")
                 .method("GET")
@@ -75,12 +79,24 @@ class AttackLogServiceTest {
                 .verdict("MONITOR")
                 .rawInput("")
                 .build();
+        AttackLog persisted = AttackLog.builder()
+                .id(assignedId)
+                .timestamp(input.getTimestamp())
+                .sourceIp(input.getSourceIp())
+                .method(input.getMethod())
+                .uri(input.getUri())
+                .cweType(input.getCweType())
+                .score(input.getScore())
+                .verdict(input.getVerdict())
+                .rawInput(input.getRawInput())
+                .build();
+        when(repository.save(input)).thenReturn(persisted);
 
-        service.save(log);
+        service.save(input);
 
         ArgumentCaptor<AttackLogSavedEvent> captor = ArgumentCaptor.forClass(AttackLogSavedEvent.class);
         verify(eventPublisher).publishEvent(captor.capture());
-        assertThat(captor.getValue().attackLogId()).isEqualTo(expectedId);
+        assertThat(captor.getValue().attackLogId()).isEqualTo(assignedId);
     }
 
     private AttackLog buildLog(String verdict, String cweType) {

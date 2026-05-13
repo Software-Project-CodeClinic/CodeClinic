@@ -30,7 +30,7 @@ public class WafFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         return ServerWebExchangeUtils.cacheRequestBody(exchange, cachedRequest ->
-            Mono.just(featureExtractor.extract(cachedRequest))
+            Mono.just(featureExtractor.extract(exchange))
                 .flatMap(inferenceClient::score)          // Week 2에서 활성화
                 .flatMap(resp -> decisionEngine.decide(exchange, chain, resp))
         );

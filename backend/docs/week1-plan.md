@@ -20,7 +20,7 @@ Week 2에서 AI 추론 연동(`InferenceClient`, `DecisionEngine`)을 붙일 수
 
 ### 실행 순서
 
-```
+```text
 T-01 ──┐
        ├── (병렬 가능)
 T-02 ──┘

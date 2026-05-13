@@ -22,13 +22,13 @@ public class AttackLogService {
     @Async("wafAsyncExecutor")
     @Transactional
     public void save(AttackLog log) {
-        repository.save(log);
+        AttackLog saved = repository.save(log);
         eventPublisher.publishEvent(new AttackLogSavedEvent(
-                log.getId(),
-                log.getCweType(),
-                log.getUri(),
-                log.getMethod(),
-                log.getVerdict()
+                saved.getId(),
+                saved.getCweType(),
+                saved.getUri(),
+                saved.getMethod(),
+                saved.getVerdict()
         ));
     }
 }

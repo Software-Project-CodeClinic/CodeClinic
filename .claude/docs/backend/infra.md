@@ -74,9 +74,6 @@ com.codeclinic.gateway
 │   ├── AsyncConfig.java               ← Week 2 (waf-async 스레드풀)
 │   ├── WafProperties.java             ← Week 2 (@ConfigurationProperties)
 │   └── WebClientConfig.java
-└── stub
-    ├── StubInferenceClient.java   ← Week 2에 삭제
-    └── StubDecisionEngine.java    ← Week 2에 삭제
 ```
 
 ## application.yml 주요 설정

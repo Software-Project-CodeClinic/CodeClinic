@@ -58,7 +58,7 @@ webClient.post().uri("/predict")
     });
 ```
 
-**Fail-Open 트리거 범위**: 타임아웃(50ms 초과), Connection refused, HTTP 5xx, JSON 파싱 실패 등
+**Fail-Open 트리거 범위**: 타임아웃(설정된 시간 초과), Connection refused, HTTP 5xx, JSON 파싱 실패 등
 모든 예외를 `onErrorResume`으로 통일하여 PASS_RESPONSE 반환.
 예외 종류는 반드시 log.warn으로 기록 (운영 중 장애 원인 추적 목적).
 
