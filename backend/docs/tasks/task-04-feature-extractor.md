@@ -86,7 +86,7 @@ public class FeatureExtractor {
 
 인터페이스 계약([interface-contract.md](../../../.claude/docs/shared/interface-contract.md))에서 정의한 형식:
 
-```
+```text
 {method} {uri} HTTP/1.1\r\n
 User-Agent: {userAgent}\r\n
 Content-Type: {contentType}\r\n
@@ -95,7 +95,7 @@ Content-Type: {contentType}\r\n
 ```
 
 예시 — SQL Injection:
-```
+```text
 GET /api/users?id=1 OR 1=1 HTTP/1.1\r\n
 User-Agent: Mozilla/5.0\r\n
 Content-Type: \r\n
@@ -104,7 +104,7 @@ Content-Type: \r\n
 ```
 
 예시 — POST with XSS body:
-```
+```text
 POST /api/comment HTTP/1.1\r\n
 User-Agent: curl/7.68.0\r\n
 Content-Type: application/json\r\n

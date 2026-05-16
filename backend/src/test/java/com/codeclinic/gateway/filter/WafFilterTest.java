@@ -20,6 +20,7 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,9 +61,10 @@ class WafFilterTest {
         StepVerifier.create(wafFilter.filter(exchange, chain))
                 .verifyComplete();
 
-        verify(featureExtractor).extract(any(ServerWebExchange.class));
-        verify(inferenceClient).score(fv);
-        verify(decisionEngine).decide(any(), any(), eq(resp));
+        org.mockito.InOrder inOrder = inOrder(featureExtractor, inferenceClient, decisionEngine);
+        inOrder.verify(featureExtractor).extract(any(ServerWebExchange.class));
+        inOrder.verify(inferenceClient).score(fv);
+        inOrder.verify(decisionEngine).decide(any(), any(), eq(resp));
     }
 
     @Test

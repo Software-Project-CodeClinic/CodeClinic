@@ -75,13 +75,15 @@ public record FeatureVector(
 ```
 
 `raw_input` 조합 방식:
-```
+```text
 {method} {uri} HTTP/1.1\r\n
 User-Agent: {userAgent}\r\n
 Content-Type: {contentType}\r\n
 \r\n
 {rawBody}
 ```
+
+> **헤더 변경 시 주의**: `User-Agent` / `Content-Type` 헤더 구성이 변경되면 백엔드(`FeatureExtractor`)와 AI(`/predict` 파싱 로직) **양쪽 모두 동시 반영**해야 합니다. 단독 변경 머지 금지.
 
 ---
 

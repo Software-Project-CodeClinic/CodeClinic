@@ -71,10 +71,12 @@ public class AttackLogQueryService {
     }
 
     public StatsResponse getStats() {
-        Long block   = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM attack_logs WHERE verdict = 'BLOCK'",   Long.class);
-        Long monitor = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM attack_logs WHERE verdict = 'MONITOR'", Long.class);
+        Map<String, Long> verdictCounts = jdbc.queryForList(
+                        "SELECT verdict, COUNT(*) AS cnt FROM attack_logs GROUP BY verdict")
+                .stream()
+                .collect(Collectors.toMap(
+                        r -> (String) r.get("verdict"),
+                        r -> ((Number) r.get("cnt")).longValue()));
 
         Map<String, Long> byLabel = jdbc.queryForList(
                         "SELECT cwe_type, COUNT(*) AS cnt FROM attack_logs"
@@ -85,8 +87,8 @@ public class AttackLogQueryService {
                         r -> ((Number) r.get("cnt")).longValue()));
 
         return new StatsResponse(
-                block   != null ? block   : 0L,
-                monitor != null ? monitor : 0L,
+                verdictCounts.getOrDefault("BLOCK",   0L),
+                verdictCounts.getOrDefault("MONITOR", 0L),
                 byLabel);
     }
 

@@ -86,6 +86,21 @@ class WebClientInferenceClientTest {
     }
 
     @Test
+    void fifty_ms_contract_timeout_triggers_fail_open() {
+        // 60ms 지연 → 50ms 계약 타임아웃 초과 → Fail-Open PASS_RESPONSE (인터페이스 계약 고정)
+        stubFor(post("/predict")
+                .willReturn(okJson("{\"classificationScore\":0.9,\"cweLabel\":\"CWE-89\"}")
+                        .withFixedDelay(60)));
+
+        WebClientInferenceClient contractClient = buildClient(wmInfo.getHttpBaseUrl(), 50);
+        FeatureVector fv = new FeatureVector("GET", "/", "Mozilla", "", "", 0);
+
+        StepVerifier.create(contractClient.score(fv))
+                .expectNext(InferenceResponse.PASS_RESPONSE)
+                .verifyComplete();
+    }
+
+    @Test
     void raw_input_body_matches_interface_contract_format() {
         // 인터페이스 계약: {method} {uri} HTTP/1.1\r\nUser-Agent: ...\r\nContent-Type: ...\r\n\r\n{body}
         stubFor(post("/predict")

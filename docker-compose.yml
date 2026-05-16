@@ -26,7 +26,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-waf}
       POSTGRES_USER: ${POSTGRES_USER:-waf}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-waf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-waf_local_secret}
     volumes:
       # TimescaleDB 데이터 영속화
       - tsdb_data:/var/lib/postgresql/data

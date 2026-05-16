@@ -11,7 +11,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.mockito.InOrder;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,8 +44,10 @@ class AttackLogServiceTest {
 
         service.save(log);
 
+        InOrder ordered = inOrder(repository, eventPublisher);
         ArgumentCaptor<AttackLogSavedEvent> captor = ArgumentCaptor.forClass(AttackLogSavedEvent.class);
-        verify(eventPublisher).publishEvent(captor.capture());
+        ordered.verify(repository).save(log);
+        ordered.verify(eventPublisher).publishEvent(captor.capture());
 
         AttackLogSavedEvent event = captor.getValue();
         assertThat(event.attackLogId()).isEqualTo(log.getId());

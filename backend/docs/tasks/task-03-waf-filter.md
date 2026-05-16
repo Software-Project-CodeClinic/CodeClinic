@@ -97,7 +97,7 @@ public record InferenceResponse(
 2. 이후 downstream(upstream 서비스)이 같은 body를 다시 읽을 수 있도록 `ServerHttpRequest`를 교체
 3. **이 메서드 없이 body를 읽으면 downstream은 빈 body를 수신**하므로 필수
 
-```
+```text
 [Client 요청]
      │
      ▼

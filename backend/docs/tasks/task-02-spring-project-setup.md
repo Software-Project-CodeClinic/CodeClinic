@@ -30,15 +30,15 @@ Spring Cloud Gateway 기반 프로젝트의 **골격**을 만든다.
 | 의존성 | 용도 |
 |--------|------|
 | `spring-cloud-starter-gateway` | Spring Cloud Gateway (WebFlux 기반) |
-| `spring-boot-starter-data-r2dbc` | 비동기 DB 접근 |
-| `r2dbc-postgresql` | PostgreSQL R2DBC 드라이버 |
+| `spring-boot-starter-data-jdbc` | JDBC 기반 DB 접근 (`AttackLogRepository`) |
+| `postgresql` | PostgreSQL JDBC 드라이버 |
 | `spring-boot-starter-validation` | 입력 검증 |
 | `spring-boot-starter-actuator` | 헬스체크 |
 | `spring-boot-starter-test` | 테스트 |
 | `reactor-test` | Reactor 테스트 유틸 |
 | `lombok` | 보일러플레이트 제거 |
 
-> R2DBC를 사용하는 이유: Spring Cloud Gateway는 **WebFlux(Netty) 기반**이므로 블로킹 JDBC 사용 불가.
+> JDBC를 사용하는 이유: `AttackLogService`는 `@Async` 전용 스레드풀(`wafAsyncExecutor`)에서 실행되므로 블로킹 JDBC가 허용된다. WebFlux 이벤트 루프와 분리되어 있어 응답 지연 없음.
 
 ### 2. 패키지 구조
 
@@ -77,8 +77,8 @@ backend/src/main/java/com/codeclinic/gateway/
 spring:
   application:
     name: codeclinic-gateway
-  r2dbc:
-    url: r2dbc:postgresql://localhost:5432/waf
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:waf}
     username: ${DB_USER:waf}
     password: ${DB_PASSWORD:waf_local_secret}
 
@@ -144,5 +144,5 @@ public class GatewayApplication {
 ## 주의사항
 
 - **WebFlux + Cloud Gateway**: `spring-boot-starter-web`(서블릿 기반)과 동시 사용 불가 → 의존성에서 제외
-- **R2DBC vs JDBC**: Gateway는 Netty 기반이므로 JDBC(블로킹) 사용 시 이벤트 루프 블로킹 발생 — R2DBC 사용 필수
+- **JDBC + @Async 전략**: DB 접근(`AttackLogService`, `AttackLogRepository`)은 `@Async("wafAsyncExecutor")` 전용 스레드풀에서 실행 → WebFlux 이벤트 루프 블로킹 없음
 - **@EnableAsync**: `AttackLogService`의 `@Async` 동작을 위해 애플리케이션 시작 시점부터 활성화

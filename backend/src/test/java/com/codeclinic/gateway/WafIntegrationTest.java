@@ -125,9 +125,11 @@ class WafIntegrationTest {
                 .exchange()
                 .expectStatus().isOk();
 
-        // Fail-Open PASS → attack_logs에 아무것도 저장하지 않음
-        Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM attack_logs", Integer.class);
-        assertThat(count).isZero();
+        // Fail-Open PASS → attack_logs에 아무것도 저장하지 않음 (비동기 쓰기 발생 여부를 300ms 대기 후 확인)
+        await().pollDelay(Duration.ofMillis(300)).atMost(Duration.ofSeconds(1)).untilAsserted(() -> {
+            Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM attack_logs", Integer.class);
+            assertThat(count).isZero();
+        });
     }
 
     // ── 시나리오 3: Dashboard /api/stats ─────────────────────────────────
@@ -172,7 +174,7 @@ class WafIntegrationTest {
     private void insertAttackLog(UUID id, Instant ts, String cweType, String verdict, double score) {
         jdbc.update(
                 "INSERT INTO attack_logs (id, timestamp, source_ip, method, uri, cwe_type, score, verdict, raw_input)"
-                        + " VALUES (?, ?, '127.0.0.1', 'POST', '/test', ?, ?, ?, '')",
-                id, java.sql.Timestamp.from(ts), cweType, score, verdict);
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                id, java.sql.Timestamp.from(ts), "127.0.0.1", "POST", "/test", cweType, score, verdict, "");
     }
 }

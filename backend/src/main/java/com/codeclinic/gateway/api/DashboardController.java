@@ -3,13 +3,16 @@ package com.codeclinic.gateway.api;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,8 +40,8 @@ public class DashboardController {
             @RequestParam(required = false) String  to,
             @RequestParam(defaultValue = "0")  @Min(0)          int  page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int  size) {
-        Instant fromInstant = from != null ? Instant.parse(from) : null;
-        Instant toInstant   = to   != null ? Instant.parse(to)   : null;
+        Instant fromInstant = parseInstantParam(from, "from");
+        Instant toInstant   = parseInstantParam(to, "to");
         return Mono.fromCallable(
                         () -> queryService.findAll(cweLabel, verdict, fromInstant, toInstant, page, size))
                 .subscribeOn(Schedulers.boundedElastic());
@@ -62,5 +65,15 @@ public class DashboardController {
     public Mono<StatsResponse> getStats() {
         return Mono.fromCallable(queryService::getStats)
                 .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private Instant parseInstantParam(String value, String paramName) {
+        if (value == null) return null;
+        try {
+            return Instant.parse(value);
+        } catch (DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid ISO-8601 date for '" + paramName + "': " + e.getMessage());
+        }
     }
 }
