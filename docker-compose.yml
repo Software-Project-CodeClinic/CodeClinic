@@ -22,7 +22,7 @@ services:
   # ───────────────────────────────────────────────────────────────────
 
   timescaledb:
-    image: timescale/timescaledb:latest-pg15
+    image: timescale/timescaledb:2.20.0-pg15
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-waf}
       POSTGRES_USER: ${POSTGRES_USER:-waf}

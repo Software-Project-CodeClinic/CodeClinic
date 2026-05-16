@@ -15,7 +15,7 @@ Week 2에서 AI 추론 연동(`InferenceClient`, `DecisionEngine`)을 붙일 수
 |---|------|--------|--------|---------|
 | T-01 | Docker Compose 구성 (TimescaleDB, Redis) | `feat/backend/infra` | 없음 | 보통 |
 | T-02 | Spring Boot 프로젝트 생성 + 패키지 구조 확정 | `feat/backend/infra` | 없음 | 보통 |
-| T-03 | `WafFilter` 구현 (`cacheRequestBody` 포함) | `feat/backend/waf-filter` | T-02 | ★ 최우선 |
+| T-03 | `WafFilter` 구현 (`cacheRequestBody` 포함) | `feat/backend/waf-filter` | T-04 | ★ 최우선 |
 | T-04 | `FeatureExtractor` 구현 (Raw Input 파싱) | `feat/backend/waf-filter` | T-02 | 보통 |
 
 ### 실행 순서

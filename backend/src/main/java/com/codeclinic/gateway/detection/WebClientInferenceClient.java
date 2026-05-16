@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -34,10 +33,8 @@ public class WebClientInferenceClient implements InferenceClient {
                 .retrieve()
                 .bodyToMono(InferenceResponse.class)
                 .timeout(Duration.ofMillis(wafProperties.aiServer().timeoutMs()))
-                .onErrorResume(e -> {
-                    log.warn("InferenceClient error [{}]: {}", e.getClass().getSimpleName(), e.getMessage());
-                    return Mono.just(InferenceResponse.PASS_RESPONSE);
-                });
+                .doOnError(e -> log.warn("InferenceClient error [{}]: {}", e.getClass().getSimpleName(), e.getMessage()))
+                .onErrorReturn(InferenceResponse.PASS_RESPONSE);
     }
 
     // 인터페이스 계약 형식: {method} {uri} HTTP/1.1\r\n{헤더}\r\n\r\n{body}

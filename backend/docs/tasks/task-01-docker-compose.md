@@ -18,7 +18,7 @@ Week 4 전체 스택 통합 시 이 Compose 파일을 그대로 확장해 사용
 
 | 서비스 | 이미지 | 포트 | 비고 |
 |--------|--------|------|------|
-| `timescaledb` | `timescale/timescaledb:latest-pg15` | `5432:5432` | 공격 로그 저장소 |
+| `timescaledb` | `timescale/timescaledb:2.20.0-pg15` | `5432:5432` | 공격 로그 저장소 |
 | `redis` | `redis:7-alpine` | `6379:6379` | (Week 2 이후 사용 예정, 선 구성) |
 
 Week 1에서 `spring-gateway`, `fastapi` 서비스는 **주석 처리**로 남긴다.  
@@ -33,7 +33,7 @@ CREATE DATABASE waf;
 \c waf
 
 CREATE TABLE IF NOT EXISTS attack_logs (
-    id          BIGSERIAL,
+    id          UUID            NOT NULL DEFAULT gen_random_uuid(),
     timestamp   TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     source_ip   TEXT            NOT NULL,
     method      TEXT            NOT NULL,
@@ -51,12 +51,13 @@ CREATE INDEX ON attack_logs (cwe_type, timestamp DESC);
 CREATE INDEX ON attack_logs (source_ip, timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS recommendations (
-    id              BIGSERIAL PRIMARY KEY,
-    attack_log_id   BIGINT    NOT NULL,
-    cwe_type        TEXT      NOT NULL,
+    id              UUID        NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    attack_log_id   UUID        NOT NULL,
+    cwe_type        TEXT        NOT NULL,
     file_path       TEXT,
     line_number     INT,
-    recommendation  TEXT      NOT NULL,
+    pattern         TEXT        NOT NULL,
+    suggestion      TEXT        NOT NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
@@ -88,4 +89,4 @@ POSTGRES_PASSWORD=waf_local_secret
 
 - `.env` 파일을 커밋하지 않는다 (`.gitignore` 등록 필수)
 - TimescaleDB init 스크립트는 볼륨이 **처음 생성될 때만** 실행된다 — 스키마 변경 시 볼륨 삭제 후 재실행 필요
-- `timescale/timescaledb:latest-pg15` 이미지는 `pg_isready` health check 지원 → `depends_on` 활용 시 `condition: service_healthy` 사용
+- `timescale/timescaledb:2.20.0-pg15` 이미지는 `pg_isready` health check 지원 → `depends_on` 활용 시 `condition: service_healthy` 사용
