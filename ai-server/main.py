@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from predict import WAFPredictor
@@ -36,5 +36,7 @@ def health() -> dict:
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest) -> PredictResponse:
+    if _predictor is None:
+        raise HTTPException(status_code=503, detail="Model not loaded")
     result = _predictor.predict(req.raw_input)
     return PredictResponse(**result)
