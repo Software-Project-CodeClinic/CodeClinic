@@ -42,7 +42,7 @@ class WafIntegrationTest {
     @Container
     static final PostgreSQLContainer<?> DB =
             new PostgreSQLContainer<>(
-                    DockerImageName.parse("timescale/timescaledb:latest-pg16")
+                    DockerImageName.parse("timescale/timescaledb:2.20.0-pg16")
                             .asCompatibleSubstituteFor("postgres"))
                     .withInitScript("init.sql");
 

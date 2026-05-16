@@ -17,6 +17,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.http.HttpStatus;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -88,5 +90,8 @@ class WafFilterTest {
         // 완료(Mono.empty)만 방출되고 오류 없어야 함 (403 없음)
         StepVerifier.create(wafFilter.filter(exchange, chain))
                 .verifyComplete();
+
+        assertThat(exchange.getResponse().getStatusCode()).isNotEqualTo(HttpStatus.FORBIDDEN);
+        verify(chain).filter(any());
     }
 }

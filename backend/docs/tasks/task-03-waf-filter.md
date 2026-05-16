@@ -44,6 +44,7 @@ Week 2(`InferenceClient`, `DecisionEngine`) 미구현 상태에서 컴파일·�
 
 ```java
 // StubInferenceClient.java — Week 2 전까지만 사용
+@Profile("!production")
 @Primary
 @Component
 public class StubInferenceClient implements InferenceClient {
@@ -54,6 +55,7 @@ public class StubInferenceClient implements InferenceClient {
 }
 
 // StubDecisionEngine.java — Week 2 전까지만 사용
+@Profile("!production")
 @Primary
 @Component
 public class StubDecisionEngine implements DecisionEngine {
@@ -64,8 +66,9 @@ public class StubDecisionEngine implements DecisionEngine {
 }
 ```
 
-> `@Primary`를 사용하여 Week 2에서 실제 구현체를 추가하면 스텁이 자동으로 밀려남.  
-> Week 2 완료 후 스텁 클래스는 삭제한다.
+> `@Profile("!production")`으로 프로덕션 환경에서는 스텁이 활성화되지 않는다.  
+> `@Primary`는 같은 프로파일 내에서 빈 충돌 발생 시 스텁을 우선 선택하기 위해 함께 사용한다.  
+> Week 2에서 실제 구현체(`WebClientInferenceClient`, `DecisionEngineImpl`)를 추가하고 스텁 클래스는 삭제한다.
 
 ### 2. 인터페이스 정의
 
