@@ -1,0 +1,56 @@
+services:
+  # ── Week 4에서 주석 해제 ────────────────────────────────────────────
+  # spring-gateway:
+  #   build: ./backend
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     timescaledb:
+  #       condition: service_healthy
+  #   environment:
+  #     DB_USER: ${POSTGRES_USER}
+  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
+  #     AI_SERVER_URL: http://fastapi:8000
+  #
+  # fastapi:
+  #   build: ./ai-server
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     timescaledb:
+  #       condition: service_healthy
+  # ───────────────────────────────────────────────────────────────────
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-waf}
+      POSTGRES_USER: ${POSTGRES_USER:-waf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-waf_local_secret}
+    volumes:
+      # TimescaleDB 데이터 영속화
+      - tsdb_data:/var/lib/postgresql/data
+      # 최초 기동 시 자동 실행되는 초기화 SQL (hypertable, 인덱스 생성)
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-waf} -d ${POSTGRES_DB:-waf}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Week 2 이후 사용 예정 (세션 캐시 등). 미리 구성해 둠
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  tsdb_data:

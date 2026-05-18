@@ -17,12 +17,12 @@
    ▼
 [Decision Engine] ← BLOCK / MONITOR / PASS (임계값: yml 외부화)
    │
-   ├── PASS  → upstream 프록시
-   ├── BLOCK → 403 즉시 반환
-   └── MONITOR/BLOCK
-          │
+   ├── PASS    → upstream 프록시 (로그 없음)
+   ├── BLOCK   → 403 즉시 반환 (빈 바디) + attack_logs INSERT (verdict=BLOCK)
+   └── MONITOR → upstream 통과 + attack_logs INSERT (verdict=MONITOR)
+          │ (BLOCK / MONITOR 모두)
           ▼
-     [Attack Log Service] ← @Async, TimescaleDB hypertable
+     [Attack Log Service] ← @Async + JDBC, TimescaleDB hypertable
           │ @TransactionalEventListener (커밋 후)
           ▼
      [Feedback Bridge] ← Cold Path (응답과 완전 분리)
