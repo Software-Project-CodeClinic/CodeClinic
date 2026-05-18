@@ -6,7 +6,7 @@ spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:waf}
     username: ${DB_USER:waf}
-    password: ${DB_PASSWORD:waf}
+    password: ${DB_PASSWORD:waf_local_secret}
 
   cloud:
     gateway:
