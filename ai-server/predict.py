@@ -1,8 +1,6 @@
 import torch
 from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
 
-from preprocess import clean_text
-
 _LABEL_MAP = {
     "LABEL_0": "NORMAL",
     "LABEL_1": "CWE-89",
@@ -21,9 +19,8 @@ class WAFPredictor:
         self.model.to(self.device)
 
     def predict(self, raw_input: str) -> dict:
-        text = clean_text(raw_input)
         inputs = self.tokenizer(
-            text,
+            raw_input,
             return_tensors="pt",
             truncation=True,
             max_length=256,
