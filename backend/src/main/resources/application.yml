@@ -30,6 +30,9 @@ waf:
     url: ${AI_SERVER_URL:http://localhost:8000}
     timeout-ms: 50  # 초과 시 Fail-Open (classificationScore=0.0, cweLabel="NORMAL")
   source-root: src/main/java  # SourceLocator가 .java 파일 탐색 시 기준 경로 (WafProperties.sourceRoot)
+  semgrep:
+    command: ""         # 비어있으면 SEMGREP_CMD 환경변수 → PATH의 semgrep 순으로 결정
+    rules-dir: semgrep-rules  # 규칙 YAML 파일 디렉터리. Spring 기동 디렉터리 기준 상대경로 또는 절대경로
 
 # Actuator 헬스체크 노출 (docker compose healthcheck 연동)
 management:
@@ -37,3 +40,8 @@ management:
     web:
       exposure:
         include: health,info
+
+logging:
+  level:
+    com.codeclinic.gateway.feedback: DEBUG
+    com.codeclinic.gateway.log: DEBUG
