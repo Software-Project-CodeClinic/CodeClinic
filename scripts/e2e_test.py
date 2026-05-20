@@ -55,7 +55,7 @@ try:
 except ImportError:
     HAS_PSYCOPG2 = False
 
-GATEWAY = "http://localhost:8080"
+GATEWAY = "http://localhost:8181"
 DB_DSN  = "postgresql://waf:waf_local_secret@localhost:5432/waf"
 
 LABEL_MAP    = {0: "NORMAL", 1: "CWE-89", 2: "CWE-79", 3: "CWE-78", 4: "CWE-22"}

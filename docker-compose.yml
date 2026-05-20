@@ -1,25 +1,38 @@
 services:
-  # ── Week 4에서 주석 해제 ────────────────────────────────────────────
-  # spring-gateway:
-  #   build: ./backend
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     timescaledb:
-  #       condition: service_healthy
-  #   environment:
-  #     DB_USER: ${POSTGRES_USER}
-  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
-  #     AI_SERVER_URL: http://fastapi:8000
-  #
-  # fastapi:
-  #   build: ./ai-server
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     timescaledb:
-  #       condition: service_healthy
-  # ───────────────────────────────────────────────────────────────────
+  spring-gateway:
+    build: ./backend
+    ports:
+      # Windows Hyper-V가 8080을 예약하므로 호스트 포트는 8181 사용
+      # 접속: http://localhost:8181/api/dashboard
+      - "8181:8080"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    environment:
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-waf}
+      DB_USER: ${POSTGRES_USER:-waf}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-waf_local_secret}
+      AI_SERVER_URL: ${AI_SERVER_URL:-http://fastapi:8000}
+      SEMGREP_CMD: semgrep
+      SPRING_PROFILES_ACTIVE: demo
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  fastapi:
+    build: ./ai-server
+    ports:
+      - "8000:8000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
 
   timescaledb:
     image: timescale/timescaledb:latest-pg17
