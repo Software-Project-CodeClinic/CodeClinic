@@ -1,0 +1,31 @@
+rules:
+  - id: java-xss-response-writer-write-concat
+    patterns:
+      - pattern-either:
+          - pattern: $RESP.getWriter().write($A + $B)
+          - pattern: $RESP.getWriter().print($A + $B)
+          - pattern: $RESP.getWriter().println($A + $B)
+          - pattern: $WRITER.write($A + $B)
+          - pattern: $WRITER.print($A + $B)
+          - pattern: $WRITER.println($A + $B)
+    message: >
+      XSS: user input concatenated directly into HTTP response writer without escaping.
+      Use HtmlUtils.htmlEscape() before writing, or switch to a template engine
+      (Thymeleaf, FreeMarker) with auto-escaping enabled.
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-79
+
+  - id: java-xss-innerhtml-html-string-concat
+    patterns:
+      - pattern-either:
+          - pattern: $SB.append("<" + $A)
+          - pattern: $SB.append($A + ">")
+    message: >
+      XSS: HTML markup assembled by string concatenation with unsanitized user input.
+      Use a template engine with auto-escaping or OWASP Java HTML Sanitizer.
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-79

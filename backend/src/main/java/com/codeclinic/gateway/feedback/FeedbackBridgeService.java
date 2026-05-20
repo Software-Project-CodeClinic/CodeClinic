@@ -69,7 +69,7 @@ public class FeedbackBridgeService {
 
     private void saveRecommendation(UUID attackLogId, String cweLabel, Path sourcePath,
                                     SemgrepRunner.Finding finding) {
-        Optional<String> suggestion = recommendationBuilder.build(cweLabel, finding.checkId());
+        Optional<String> suggestion = recommendationBuilder.build(cweLabel, finding);
         if (suggestion.isEmpty()) {
             log.debug("FeedbackBridge: no template for {} + checkId={}", cweLabel, finding.checkId());
             return;

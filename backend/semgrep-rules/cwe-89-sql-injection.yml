@@ -1,0 +1,14 @@
+rules:
+  - id: java-sqli-Statement-execute-concat
+    patterns:
+      - pattern-either:
+          - pattern: $STMT.executeQuery($A + $B)
+          - pattern: $STMT.execute($A + $B)
+          - pattern: $STMT.executeUpdate($A + $B)
+    message: >
+      SQL injection: user input concatenated directly into a SQL Statement.execute call.
+      Use PreparedStatement with parameterized queries instead.
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-89

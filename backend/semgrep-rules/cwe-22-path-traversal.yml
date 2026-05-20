@@ -1,0 +1,24 @@
+rules:
+  - id: java-path-traversal-new-File-concat
+    patterns:
+      - pattern-either:
+          - pattern: new File($A + $B)
+          - pattern: new File($A, $B + $C)
+    message: >
+      Path traversal: user input concatenated into new File() path.
+      Use Paths.get().normalize() and validate the resolved path stays within allowed base directory.
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-22
+
+  - id: java-path-traversal-Paths-get-concat
+    patterns:
+      - pattern: Paths.get($A + $B)
+    message: >
+      Path traversal: user input concatenated into Paths.get() path.
+      Use Paths.get(base).resolve(input).normalize() and verify startsWith(base).
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-22
