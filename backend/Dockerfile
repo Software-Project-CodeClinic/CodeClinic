@@ -28,5 +28,5 @@ COPY --from=builder /app/build/libs/gateway-0.0.1-SNAPSHOT.jar app.jar
 # Semgrep 커스텀 룰 (cwe-79-xss.yml 등)
 COPY --from=builder /app/semgrep-rules/ /app/semgrep-rules/
 
-EXPOSE 8080
+EXPOSE 8181
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -4,7 +4,7 @@ services:
     ports:
       # Windows Hyper-V가 8080을 예약하므로 호스트 포트는 8181 사용
       # 접속: http://localhost:8181/api/dashboard
-      - "8181:8080"
+      - "8181:8181"
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -20,7 +20,7 @@ services:
       SEMGREP_CMD: semgrep
       SPRING_PROFILES_ACTIVE: demo
     healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:8181/actuator/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
