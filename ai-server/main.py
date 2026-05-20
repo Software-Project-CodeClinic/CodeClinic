@@ -31,7 +31,10 @@ class PredictResponse(BaseModel):
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    # MODEL_PATH 예: "models/case_f/final" → model_name: "case_f"
+    parts = MODEL_PATH.replace("\\", "/").rstrip("/").split("/")
+    model_name = parts[-2] if len(parts) >= 2 else MODEL_PATH
+    return {"status": "ok", "model": model_name}
 
 
 @app.post("/predict", response_model=PredictResponse)
