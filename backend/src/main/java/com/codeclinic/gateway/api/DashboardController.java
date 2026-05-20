@@ -3,7 +3,9 @@ package com.codeclinic.gateway.api;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,14 @@ import java.util.UUID;
 public class DashboardController {
 
     private final AttackLogQueryService queryService;
+
+    @GetMapping(value = "/dashboard", produces = MediaType.TEXT_HTML_VALUE)
+    public Mono<ResponseEntity<byte[]>> dashboard() {
+        return Mono.fromCallable(() -> {
+            byte[] html = new ClassPathResource("static/dashboard.html").getInputStream().readAllBytes();
+            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
 
     @GetMapping("/attacks")
     public Mono<AttackPageResponse> listAttacks(
