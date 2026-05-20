@@ -16,6 +16,7 @@ import csv
 import sys
 import time
 from collections import Counter, defaultdict
+from urllib.parse import unquote_plus
 
 try:
     import requests
@@ -27,7 +28,7 @@ LABEL_MAP = {0: "NORMAL", 1: "CWE-89", 2: "CWE-79", 3: "CWE-78", 4: "CWE-22"}
 ATTACK_LABELS = {1, 2, 3, 4}
 
 # raw_input 조합 (인터페이스 계약 준수)
-def build_raw_input(text: str) -> str:
+def build_raw_input(text: str, decode_uri: bool = False) -> str:
     text = text.strip()
     # test.csv: "GET /path..." 형태 → 인터페이스 계약 형식으로 래핑
     parts = text.split(" ", 2)
@@ -39,6 +40,8 @@ def build_raw_input(text: str) -> str:
         p = urlparse(rest)
         rest = p.path + (("?" + p.query) if p.query else "")
     uri = rest.split(" ")[0]  # "HTTP/1.1" 이후 제거
+    if decode_uri:
+        uri = unquote_plus(uri)
     return (
         f"{method} {uri} HTTP/1.1\r\n"
         "User-Agent: eval-script/1.0\r\n"
@@ -63,25 +66,31 @@ def predict(session, url: str, raw_input: str) -> dict | None:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv",   default="test.csv")
-    parser.add_argument("--url",   default="http://localhost:8000")
-    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--csv",        default="test.csv")
+    parser.add_argument("--url",        default="http://localhost:8000")
+    parser.add_argument("--limit",      type=int, default=None)
+    parser.add_argument("--decode-uri", action="store_true",
+                        help="URI를 URL 디코딩 후 모델에 전달 (FeatureExtractor 변경 반영)")
     args = parser.parse_args()
 
     # AI 서버 health check
     try:
         r = requests.get(f"{args.url}/health", timeout=3)
         r.raise_for_status()
-        print(f"AI 서버 연결 확인: {args.url}")
+        info = r.json()
+        model_name = info.get("model", "unknown")
+        print(f"AI 서버 연결 확인: {args.url}  |  모델: {model_name}")
     except Exception:
-        sys.exit(f"AI 서버({args.url})에 연결할 수 없습니다. uvicorn을 먼저 시작하세요.")
+        sys.exit(f"AI 서버({args.url})에 연결할 수 없습니다. start.py를 먼저 실행하세요.")
 
     # 데이터 로딩
     with open(args.csv, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     if args.limit:
         rows = rows[:args.limit]
-    print(f"테스트 데이터: {args.csv} ({len(rows)}건)\n")
+    decode_uri = args.decode_uri
+    mode_label = "URI 디코딩 O" if decode_uri else "URI 디코딩 X (원본)"
+    print(f"테스트 데이터: {args.csv} ({len(rows)}건)  |  모드: {mode_label}\n")
 
     # 예측 실행
     session   = requests.Session()
@@ -92,7 +101,7 @@ def main():
 
     for i, row in enumerate(rows, 1):
         true_label = int(row["label"])
-        raw_input  = build_raw_input(row["text"])
+        raw_input  = build_raw_input(row["text"], decode_uri=decode_uri)
 
         t0     = time.time()
         result = predict(session, args.url, raw_input)

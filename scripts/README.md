@@ -6,6 +6,7 @@
 |----------|------|-------------|
 | `eval_ai.py` | AI 모델 정확도만 측정 (빠름) | AI 서버만 |
 | `e2e_test.py` | Hot-Path + Cold-Path 전체 파이프라인 | Docker + AI 서버 + Spring |
+| `e2e_test.py --demo` | Cold-Path Recommendation 생성까지 검증 | Docker + AI 서버 + Spring(demo 프로파일) |
 
 ---
 
@@ -63,6 +64,49 @@ python scripts/e2e_test.py                  # 전체 (2477건, 약 5~10분)
 python scripts/e2e_test.py --limit 100      # 빠른 검증 (100건)
 python scripts/e2e_test.py --no-db-check    # DB 없이 HTTP 응답만 확인
 ```
+
+---
+
+## 3. Cold-Path Recommendation 생성 검증 (`e2e_test.py --demo`)
+
+### 사전 조건
+
+1. Semgrep 설치: `pip install semgrep`
+2. Spring을 **demo 프로파일**로 기동
+
+### 서비스 기동 순서
+
+**① TimescaleDB**
+```bash
+docker compose up -d timescaledb
+```
+
+**② AI 서버**
+```bash
+cd ai-server
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+**③ Spring Gateway (demo 프로파일)**
+```bash
+cd backend
+./gradlew bootRun --args='--spring.profiles.active=demo'
+```
+
+### 실행
+
+```bash
+python scripts/e2e_test.py --demo             # DB 검증 포함 (권장)
+python scripts/e2e_test.py --demo --no-db-check  # HTTP 응답만 확인
+```
+
+### demo 프로파일 동작 방식
+
+`DemoRoutingConfig`가 `RequestMappingHandlerMapping` 우선순위를 order=2로 낮춘다.
+게이트웨이(order=1)가 먼저 처리하므로 WafFilter가 `/shop/**` 경로에도 실행된다.
+WafFilter → BLOCK → FeedbackBridgeService → EndpointResolver → SourceLocator → Semgrep → Recommendation 생성.
+
+> **주의**: demo 모드에서 Dashboard API(`/api/**`)는 비작동. 기본 프로파일에서 별도 검증.
 
 ---
 
