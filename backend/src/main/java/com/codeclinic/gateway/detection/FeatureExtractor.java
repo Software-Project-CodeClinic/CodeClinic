@@ -7,6 +7,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -14,9 +15,11 @@ import java.util.List;
 /**
  * HTTP 요청에서 AI 모델 입력용 FeatureVector를 파싱한다.
  *
- * 핵심 불변식: 인코딩 정규화 없음.
- * URL decode·HTML entity decode·NFKC 정규화를 수행하지 않는다.
- * 모델이 인코딩 패턴(%3Cscript%3E 등) 자체를 특징으로 학습하기 때문이다. (논문 3.2절)
+ * URI는 URL 디코딩 후 모델에 전달한다 (%27 → ', %3B → ; 등).
+ * 현재 모델이 URL 인코딩된 SQL injection을 CWE-79로 오분류하는 문제의 임시 대응.
+ * 모델이 인코딩 패턴까지 학습한 버전으로 교체되면 이 변환을 제거한다.
+ *
+ * rawBody는 정규화하지 않는다 (POST body는 대부분 이미 디코딩된 상태로 도착).
  */
 @Component
 public class FeatureExtractor {
@@ -51,14 +54,19 @@ public class FeatureExtractor {
     }
 
     /**
-     * percent-encoding을 보존한 Raw URI를 반환한다.
-     * getRawPath/getRawQuery를 사용해야 decode가 발생하지 않는다.
-     * getPath/getQuery는 자동으로 percent-decode를 수행하므로 사용 금지.
+     * URI를 URL 디코딩해서 반환한다 (%27 → ', + → 공백 등).
+     * 모델이 URL 인코딩된 SQL injection을 CWE-79로 오분류하는 문제의 임시 대응.
+     * 잘못된 인코딩 시퀀스는 IllegalArgumentException을 던지므로 catch 후 원본 반환.
      */
     private String extractRawUri(ServerHttpRequest request) {
-        String path  = request.getURI().getRawPath();
-        String query = request.getURI().getRawQuery();
-        return query != null ? path + "?" + query : path;
+        String rawPath  = request.getURI().getRawPath();
+        String rawQuery = request.getURI().getRawQuery();
+        String raw = rawQuery != null ? rawPath + "?" + rawQuery : rawPath;
+        try {
+            return URLDecoder.decode(raw, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return raw;
+        }
     }
 
     /**
