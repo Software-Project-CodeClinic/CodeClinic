@@ -64,12 +64,14 @@ process.waitFor();
 - **실패 처리**: 예외 catch 후 Recommendation 없이 종료 (graceful degradation)
   Semgrep 미설치, 파일 없음, 파싱 실패 모두 동일하게 처리
 
-| CWE | Semgrep 규칙셋 |
-|-----|---------------|
-| CWE-89 | `p/sql-injection` |
-| CWE-79 | `p/xss` |
-| CWE-78 | `p/command-injection` |
-| CWE-22 | `p/path-traversal` |
+| CWE | Semgrep 규칙셋 | 비고 |
+|-----|---------------|------|
+| CWE-89 | `p/owasp-top-ten` | taint 분석 포함 (`tainted-sql-string`) |
+| CWE-79 | `cwe-79-xss.yml` (로컬) | Registry에 `getWriter().write()` 패턴 없음 |
+| CWE-78 | `p/owasp-top-ten` | taint 분석 포함 (`tainted-system-command`) |
+| CWE-22 | `p/owasp-top-ten` | taint 분석 포함 (`tainted-file-path`) |
+
+Registry 룰셋은 여러 CWE 결과를 반환하므로 `parseFindings()`에서 `metadata.cwe` 배열로 필터링.
 
 ### ④ RecommendationBuilder
 
@@ -125,5 +127,9 @@ private static final Map<String, String> TEMPLATES = Map.of(
     + "권고: Paths.get 결합 후 반드시 normalize()와 startsWith() 경계 검사를 수행하세요."
 );
 ```
+
+**message-first 방식**: Registry 규칙은 `results[].extra.message`에 전문가 작성 권고 텍스트를 포함한다.
+`Finding` record에 `message` 필드를 추가하고, `RecommendationBuilder.build()`에서 `message`를 우선 사용한다.
+TEMPLATES는 `message`가 없는 경우의 fallback으로만 동작한다.
 
 결과는 `recommendations` 테이블에 저장 후 DashboardController로 노출.

@@ -10,7 +10,7 @@
 | 분류 클래스 | 5클래스 (NORMAL, CWE-89, CWE-79, CWE-78, CWE-22) |
 | 학습 환경 | RTX 3060 12GB, Ubuntu 24.04 (WSL2), PyTorch 2.5.1 |
 | 하이퍼파라미터 | max_length=128, lr=2e-5, batch=16, epoch=5 |
-| 채택 케이스 | Case C (DR 96.42%, FPR 0.54%, Macro F1 0.979) |
+| 채택 케이스 | case_g (정확도 90.23%, `--decode-uri` 모드 권장) |
 
 ## FastAPI 서버
 
