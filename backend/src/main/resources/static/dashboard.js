@@ -9,6 +9,7 @@ let activePreset   = null;  // 1 | 24 | 168 | null
 
 // ── CWE 메타 ────────────────────────────────────────────────────
 const CWE_META = {
+  'NORMAL': { cls: '',       barColor: 'bg-emerald-500' },
   'CWE-89': { cls: 'cwe-89', barColor: 'bg-violet-500' },
   'CWE-79': { cls: 'cwe-79', barColor: 'bg-pink-500'   },
   'CWE-78': { cls: 'cwe-78', barColor: 'bg-orange-500' },
@@ -119,31 +120,49 @@ async function loadStats() {
 
     document.getElementById('statBlock').textContent   = s.totalBlock   ?? 0;
     document.getElementById('statMonitor').textContent = s.totalMonitor ?? 0;
+    document.getElementById('statNormal').textContent  = s.byLabel?.['NORMAL'] ?? 0;
     document.getElementById('statCwe89').textContent   = s.byLabel?.['CWE-89'] ?? 0;
     document.getElementById('statCwe79').textContent   = s.byLabel?.['CWE-79'] ?? 0;
     document.getElementById('statCwe78').textContent   = s.byLabel?.['CWE-78'] ?? 0;
     document.getElementById('statCwe22').textContent   = s.byLabel?.['CWE-22'] ?? 0;
 
-    renderDistribution(s.byLabel ?? {});
+    renderDistribution(s.byLabel ?? {}, s.totalBlock ?? 0, s.totalMonitor ?? 0);
   } catch { /* silently ignore */ }
 }
 
-function renderDistribution(byLabel) {
+function renderDistribution(byLabel, totalBlock, totalMonitor) {
   const section = document.getElementById('distSection');
-  const chart   = document.getElementById('distChart');
-  const entries = Object.entries(byLabel).filter(([, v]) => v > 0);
-  const total   = entries.reduce((sum, [, v]) => sum + v, 0);
+  const verdictTotal = totalBlock + totalMonitor;
+  const labelOrder   = ['NORMAL', 'CWE-89', 'CWE-79', 'CWE-78', 'CWE-22'];
+  const labelTotal   = labelOrder.reduce((sum, k) => sum + (byLabel[k] ?? 0), 0);
 
-  if (total === 0) { section.classList.add('hidden'); return; }
+  if (verdictTotal === 0 && labelTotal === 0) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
 
-  chart.innerHTML = ['CWE-89', 'CWE-79', 'CWE-78', 'CWE-22'].map(cwe => {
+  // Verdict 차트
+  document.getElementById('verdictChart').innerHTML = [
+    { label: 'BLOCK',   count: totalBlock,   color: 'bg-red-500'   },
+    { label: 'MONITOR', count: totalMonitor, color: 'bg-amber-500' },
+  ].map(({ label, count, color }) => {
+    const pct = verdictTotal > 0 ? (count / verdictTotal * 100).toFixed(1) : '0.0';
+    return `
+      <div class="flex items-center gap-2 text-xs">
+        <span class="w-16 text-right text-slate-400 shrink-0 font-mono">${label}</span>
+        <div class="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div class="h-full ${color} rounded-full transition-all duration-500" style="width:${pct}%"></div>
+        </div>
+        <span class="w-24 text-slate-400 shrink-0 text-right">${pct}% (${count})</span>
+      </div>`;
+  }).join('');
+
+  // Label 차트
+  document.getElementById('distChart').innerHTML = labelOrder.map(cwe => {
     const count = byLabel[cwe] ?? 0;
-    const pct   = total > 0 ? (count / total * 100).toFixed(1) : '0.0';
+    const pct   = labelTotal > 0 ? (count / labelTotal * 100).toFixed(1) : '0.0';
     const bar   = CWE_META[cwe]?.barColor ?? 'bg-slate-500';
     return `
       <div class="flex items-center gap-2 text-xs">
-        <span class="w-14 text-right text-slate-400 shrink-0 font-mono">${cwe}</span>
+        <span class="w-16 text-right text-slate-400 shrink-0 font-mono">${cwe}</span>
         <div class="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
           <div class="h-full ${bar} rounded-full transition-all duration-500" style="width:${pct}%"></div>
         </div>
