@@ -4,41 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CodeClinic WAF Dashboard</title>
+  <link rel="stylesheet" href="/api/dashboard.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .cwe-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-    .cwe-89 { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.35); }
-    .cwe-79 { background: rgba(219,39,119,.15); color: #f472b6; border: 1px solid rgba(219,39,119,.35); }
-    .cwe-78 { background: rgba(234,88,12,.15);  color: #fb923c; border: 1px solid rgba(234,88,12,.35); }
-    .cwe-22 { background: rgba(8,145,178,.15);  color: #22d3ee; border: 1px solid rgba(8,145,178,.35); }
-    .row-selected { background: #1e3a5f !important; }
-    pre.suggestion { white-space: pre-wrap; font-family: 'Consolas','Monaco',monospace; font-size: 12px; line-height: 1.7; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #1e293b; }
-    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-  </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased">
-<div class="flex h-screen overflow-hidden">
 
-  <!-- ───── Sidebar ───── -->
-  <aside class="w-60 shrink-0 bg-slate-900 border-r border-slate-700/60 flex flex-col">
-    <!-- Logo -->
-    <div class="px-5 py-4 border-b border-slate-700/60">
-      <div class="flex items-center gap-2.5">
-        <span class="text-xl">🛡️</span>
-        <div>
-          <p class="font-bold text-white leading-tight text-sm">CodeClinic</p>
-          <p class="text-xs text-slate-500">WAF Dashboard</p>
-        </div>
-      </div>
+  <!-- ───── 헤더 바 ───── -->
+  <header class="h-11 bg-slate-900 border-b border-slate-700/60 flex items-center justify-between px-5 shrink-0 sticky top-0 z-10">
+    <div class="flex items-center gap-2.5">
+      <span class="text-base">🛡️</span>
+      <span class="font-bold text-white text-sm">CodeClinic WAF Dashboard</span>
     </div>
+    <div class="flex items-center gap-3">
+      <span id="lastUpdated" class="text-xs text-slate-500">Not loaded</span>
+      <button onclick="loadAll()"
+              class="text-xs text-blue-400 hover:text-blue-300 transition-colors focus:outline-none focus:underline"
+              aria-label="Refresh">↻ Refresh</button>
+    </div>
+  </header>
 
-    <!-- Filters -->
-    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">🔍 Filters</p>
+  <div class="flex" style="height: calc(100vh - 44px)">
 
-      <div class="space-y-2.5">
+    <!-- ───── 사이드바 ───── -->
+    <aside class="w-60 shrink-0 bg-slate-900 border-r border-slate-700/60 flex flex-col overflow-y-auto">
+      <div class="px-4 py-4 space-y-4">
+        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">🔍 Filters</p>
+
+        <!-- 시간 프리셋 -->
+        <div>
+          <label class="block text-xs text-slate-400 mb-1.5">Quick Range</label>
+          <div class="flex gap-1">
+            <button id="preset1h"   onclick="setPreset(1)"    class="preset-btn flex-1 py-1 text-xs rounded bg-slate-800 border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors focus:outline-none">1h</button>
+            <button id="preset24h"  onclick="setPreset(24)"   class="preset-btn flex-1 py-1 text-xs rounded bg-slate-800 border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors focus:outline-none">24h</button>
+            <button id="preset7d"   onclick="setPreset(168)"  class="preset-btn flex-1 py-1 text-xs rounded bg-slate-800 border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors focus:outline-none">7d</button>
+            <button id="presetAll"  onclick="setPreset(null)" class="preset-btn flex-1 py-1 text-xs rounded bg-slate-800 border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors focus:outline-none">All</button>
+          </div>
+        </div>
+
+        <!-- CWE / Verdict -->
         <div>
           <label class="block text-xs text-slate-400 mb-1">CWE Type</label>
           <select id="filterCwe" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
@@ -57,14 +60,18 @@
             <option value="MONITOR">MONITOR</option>
           </select>
         </div>
+
+        <!-- 날짜 범위 수동 입력 -->
         <div>
           <label class="block text-xs text-slate-400 mb-1">From</label>
           <input id="filterFrom" type="datetime-local"
+                 oninput="clearPreset()"
                  class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">To</label>
           <input id="filterTo" type="datetime-local"
+                 oninput="clearPreset()"
                  class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500">
         </div>
 
@@ -73,365 +80,130 @@
           Apply Filter
         </button>
         <button onclick="resetFilter()"
-                class="w-full bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white rounded py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500">
+                class="w-full bg-slate-700 hover:bg-slate-600 text-white rounded py-1.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500">
           Reset
         </button>
-      </div>
 
-      <!-- Auto-refresh -->
-      <div class="pt-3 border-t border-slate-700/60">
-        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">⚡ Auto Refresh</p>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input id="autoRefresh" type="checkbox" class="w-4 h-4 accent-blue-500 rounded" onchange="toggleAutoRefresh()">
-          <span class="text-sm text-slate-300">Every 30 s</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="px-4 py-3 border-t border-slate-700/60 flex items-center justify-between">
-      <span id="lastUpdated" class="text-xs text-slate-500 truncate">Not loaded</span>
-      <button onclick="loadAll()" class="text-xs text-blue-400 hover:text-blue-300 transition-colors shrink-0 ml-2 focus:outline-none focus:underline" aria-label="Refresh">↻</button>
-    </div>
-  </aside>
-
-  <!-- ───── Main ───── -->
-  <main class="flex-1 overflow-y-auto">
-
-    <!-- Stats row -->
-    <div class="px-6 pt-6 pb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      <div class="bg-slate-900 border border-red-900/40 rounded-lg px-4 py-3">
-        <p class="text-xs text-slate-400">BLOCK</p>
-        <p id="statBlock" class="text-2xl font-bold text-red-400 mt-0.5">—</p>
-      </div>
-      <div class="bg-slate-900 border border-amber-900/40 rounded-lg px-4 py-3">
-        <p class="text-xs text-slate-400">MONITOR</p>
-        <p id="statMonitor" class="text-2xl font-bold text-amber-400 mt-0.5">—</p>
-      </div>
-      <div class="bg-slate-900 border border-violet-900/40 rounded-lg px-4 py-3">
-        <p class="text-xs text-slate-400">CWE-89</p>
-        <p id="statCwe89" class="text-2xl font-bold text-violet-400 mt-0.5">—</p>
-      </div>
-      <div class="bg-slate-900 border border-pink-900/40 rounded-lg px-4 py-3">
-        <p class="text-xs text-slate-400">CWE-79</p>
-        <p id="statCwe79" class="text-2xl font-bold text-pink-400 mt-0.5">—</p>
-      </div>
-      <div class="bg-slate-900 border border-orange-900/40 rounded-lg px-4 py-3">
-        <p class="text-xs text-slate-400">CWE-78</p>
-        <p id="statCwe78" class="text-2xl font-bold text-orange-400 mt-0.5">—</p>
-      </div>
-      <div class="bg-slate-900 border border-cyan-900/40 rounded-lg px-4 py-3">
-        <p class="text-xs text-slate-400">CWE-22</p>
-        <p id="statCwe22" class="text-2xl font-bold text-cyan-400 mt-0.5">—</p>
-      </div>
-    </div>
-
-    <!-- Attack log table -->
-    <div class="px-6 pb-4">
-      <div class="bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/60">
-          <h2 class="text-sm font-semibold text-slate-200">Attack Log</h2>
-          <span id="totalCount" class="text-xs text-slate-500">—</span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm" role="grid" aria-label="Attack log">
-            <thead>
-              <tr class="border-b border-slate-700/60 bg-slate-800/40 text-xs text-slate-400 font-medium">
-                <th class="text-left px-4 py-2 w-40">Time</th>
-                <th class="text-left px-4 py-2 w-28">CWE</th>
-                <th class="text-left px-4 py-2 w-24">Verdict</th>
-                <th class="text-left px-4 py-2 w-20">Score</th>
-                <th class="text-left px-4 py-2">URI</th>
-              </tr>
-            </thead>
-            <tbody id="attackTable">
-              <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500 text-sm">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <!-- Pagination -->
-        <div class="flex items-center justify-between px-4 py-2.5 border-t border-slate-700/60">
-          <button id="btnPrev" onclick="changePage(-1)" disabled
-                  class="px-3 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-400 disabled:opacity-40 hover:bg-slate-700 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500">
-            ← Prev
-          </button>
-          <span id="pageInfo" class="text-xs text-slate-500">Page 1</span>
-          <button id="btnNext" onclick="changePage(1)" disabled
-                  class="px-3 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-400 disabled:opacity-40 hover:bg-slate-700 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500">
-            Next →
-          </button>
+        <!-- Auto-refresh -->
+        <div class="pt-3 border-t border-slate-700/60">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">⚡ Auto Refresh</p>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="autoRefresh" type="checkbox" class="w-4 h-4 accent-blue-500 rounded" onchange="toggleAutoRefresh()">
+            <span class="text-sm text-slate-300">Every 30 s</span>
+          </label>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <!-- Detail panel -->
-    <div id="detailPanel" class="hidden px-6 pb-6">
-      <div class="bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/60">
-          <h2 class="text-sm font-semibold text-slate-200">Attack Detail &amp; Semgrep Recommendation</h2>
-          <button onclick="closeDetail()" class="text-xs text-slate-500 hover:text-slate-300 transition-colors focus:outline-none focus:underline">✕ Close</button>
+    <!-- ───── 메인 ───── -->
+    <main class="flex-1 overflow-y-auto">
+
+      <!-- 통계 카드 6개 -->
+      <div class="px-6 pt-6 pb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-slate-900 border border-slate-700/40 border-l-4 border-l-red-500 rounded-lg px-4 py-3">
+          <p class="text-xs text-slate-400">BLOCK</p>
+          <p id="statBlock" class="text-2xl font-bold text-red-400 mt-0.5">—</p>
         </div>
-        <div class="p-4 space-y-5">
+        <div class="bg-slate-900 border border-slate-700/40 border-l-4 border-l-amber-500 rounded-lg px-4 py-3">
+          <p class="text-xs text-slate-400">MONITOR</p>
+          <p id="statMonitor" class="text-2xl font-bold text-amber-400 mt-0.5">—</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-700/40 border-l-4 border-l-violet-500 rounded-lg px-4 py-3">
+          <p class="text-xs text-slate-400">CWE-89</p>
+          <p id="statCwe89" class="text-2xl font-bold text-violet-400 mt-0.5">—</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-700/40 border-l-4 border-l-pink-500 rounded-lg px-4 py-3">
+          <p class="text-xs text-slate-400">CWE-79</p>
+          <p id="statCwe79" class="text-2xl font-bold text-pink-400 mt-0.5">—</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-700/40 border-l-4 border-l-orange-500 rounded-lg px-4 py-3">
+          <p class="text-xs text-slate-400">CWE-78</p>
+          <p id="statCwe78" class="text-2xl font-bold text-orange-400 mt-0.5">—</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-700/40 border-l-4 border-l-cyan-500 rounded-lg px-4 py-3">
+          <p class="text-xs text-slate-400">CWE-22</p>
+          <p id="statCwe22" class="text-2xl font-bold text-cyan-400 mt-0.5">—</p>
+        </div>
+      </div>
 
-          <!-- Meta -->
-          <div id="detailMeta" class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"></div>
+      <!-- CWE 분포 바 차트 -->
+      <div id="distSection" class="hidden px-6 pb-4">
+        <div class="bg-slate-900 border border-slate-700/60 rounded-lg p-4">
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">CWE Distribution</p>
+          <div id="distChart" class="space-y-2.5"></div>
+        </div>
+      </div>
 
-          <!-- Raw Input -->
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Raw Input</p>
-            <div class="bg-slate-950 border border-slate-700/60 rounded-lg p-3 overflow-x-auto">
-              <pre id="detailRaw" class="text-xs text-emerald-300 font-mono whitespace-pre-wrap break-all"></pre>
-            </div>
+      <!-- 공격 로그 테이블 -->
+      <div class="px-6 pb-4">
+        <div class="bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/60">
+            <h2 class="text-sm font-semibold text-slate-200">Attack Log</h2>
+            <span id="totalCount" class="text-xs text-slate-500">—</span>
           </div>
-
-          <!-- Recommendations -->
-          <div>
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">🔍 Semgrep Recommendations</p>
-            <div id="detailRecs" class="space-y-3"></div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm" role="grid" aria-label="Attack log">
+              <thead>
+                <tr class="border-b border-slate-700/60 bg-slate-800/60 text-xs text-slate-400 font-medium">
+                  <th class="text-left px-4 py-2 w-40">Time</th>
+                  <th class="text-left px-4 py-2 w-28">CWE</th>
+                  <th class="text-left px-4 py-2 w-24">Verdict</th>
+                  <th class="text-left px-4 py-2 w-20">Score</th>
+                  <th class="text-left px-4 py-2">URI</th>
+                </tr>
+              </thead>
+              <tbody id="attackTable">
+                <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500 text-sm">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- 페이지네이션 -->
+          <div class="flex items-center justify-between px-4 py-2.5 border-t border-slate-700/60">
+            <button id="btnPrev" onclick="changePage(-1)" disabled
+                    class="px-3 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-400 disabled:opacity-40 hover:bg-slate-700 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500">
+              ← Prev
+            </button>
+            <span id="pageInfo" class="text-xs text-slate-500">Page 1</span>
+            <button id="btnNext" onclick="changePage(1)" disabled
+                    class="px-3 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-400 disabled:opacity-40 hover:bg-slate-700 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500">
+              Next →
+            </button>
           </div>
         </div>
       </div>
-    </div>
 
-  </main>
-</div>
+      <!-- 상세 패널 -->
+      <div id="detailPanel" class="hidden px-6 pb-6">
+        <div class="bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/60">
+            <h2 class="text-sm font-semibold text-slate-200">Attack Detail &amp; Semgrep Recommendation</h2>
+            <button onclick="closeDetail()" class="text-xs text-slate-500 hover:text-slate-300 transition-colors focus:outline-none focus:underline">✕ Close</button>
+          </div>
+          <div class="p-4 space-y-5">
 
-<script>
-  // ── State ──────────────────────────────────────────────
-  let currentPage = 0;
-  const PAGE_SIZE = 20;
-  let totalElements = 0;
-  let selectedId = null;
-  let autoRefreshTimer = null;
+            <!-- 메타 카드 -->
+            <div id="detailMeta" class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs"></div>
 
-  // ── Helpers ────────────────────────────────────────────
-  function cweBadge(cwe) {
-    if (!cwe || cwe === 'NORMAL') return '<span class="text-slate-500 text-xs">—</span>';
-    const cls = { 'CWE-89': 'cwe-89', 'CWE-79': 'cwe-79', 'CWE-78': 'cwe-78', 'CWE-22': 'cwe-22' }[cwe] ?? '';
-    return `<span class="cwe-badge ${cls}">${cwe}</span>`;
-  }
-
-  function verdictBadge(v) {
-    if (!v) return '<span class="text-slate-500 text-xs">—</span>';
-    const cls = v === 'BLOCK' ? 'bg-red-600' : v === 'MONITOR' ? 'bg-amber-500' : 'bg-emerald-600';
-    return `<span class="inline-block px-2 py-0.5 text-xs font-bold text-white rounded ${cls}">${v}</span>`;
-  }
-
-  function scoreClass(s) {
-    return s >= 0.8 ? 'text-red-400' : s >= 0.5 ? 'text-amber-400' : 'text-emerald-400';
-  }
-
-  function fmtTime(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const HH = String(d.getHours()).padStart(2, '0');
-    const MM = String(d.getMinutes()).padStart(2, '0');
-    const SS = String(d.getSeconds()).padStart(2, '0');
-    return `${mm}-${dd} ${HH}:${MM}:${SS}`;
-  }
-
-  function esc(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function buildQuery() {
-    const p = new URLSearchParams({ page: currentPage, size: PAGE_SIZE });
-    const cwe = document.getElementById('filterCwe').value;
-    const verdict = document.getElementById('filterVerdict').value;
-    const from = document.getElementById('filterFrom').value;
-    const to = document.getElementById('filterTo').value;
-    if (cwe) p.set('cweLabel', cwe);
-    if (verdict) p.set('verdict', verdict);
-    if (from) p.set('from', new Date(from).toISOString());
-    if (to) p.set('to', new Date(to).toISOString());
-    return p.toString();
-  }
-
-  // ── Stats ──────────────────────────────────────────────
-  async function loadStats() {
-    try {
-      const res = await fetch('/api/stats');
-      if (!res.ok) return;
-      const s = await res.json();
-      document.getElementById('statBlock').textContent   = s.totalBlock   ?? 0;
-      document.getElementById('statMonitor').textContent = s.totalMonitor ?? 0;
-      document.getElementById('statCwe89').textContent   = s.byLabel?.['CWE-89'] ?? 0;
-      document.getElementById('statCwe79').textContent   = s.byLabel?.['CWE-79'] ?? 0;
-      document.getElementById('statCwe78').textContent   = s.byLabel?.['CWE-78'] ?? 0;
-      document.getElementById('statCwe22').textContent   = s.byLabel?.['CWE-22'] ?? 0;
-    } catch { /* silently ignore */ }
-  }
-
-  // ── Attack Table ───────────────────────────────────────
-  async function loadAttacks() {
-    const tbody = document.getElementById('attackTable');
-    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-slate-500 text-sm">Loading…</td></tr>';
-    try {
-      const res  = await fetch('/api/attacks?' + buildQuery());
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      totalElements = data.totalElements ?? 0;
-      document.getElementById('totalCount').textContent = `${totalElements} total`;
-      syncPagination();
-
-      if (!data.content?.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-slate-500 text-sm">No attacks found.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = data.content.map(row => `
-        <tr class="border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer transition-colors ${selectedId === row.id ? 'row-selected' : ''}"
-            onclick="selectAttack('${row.id}', this)" data-id="${row.id}" tabindex="0"
-            onkeydown="if(event.key==='Enter')selectAttack('${row.id}',this)"
-            role="button" aria-pressed="${selectedId === row.id}">
-          <td class="px-4 py-2 text-xs text-slate-400 whitespace-nowrap font-mono">${fmtTime(row.timestamp)}</td>
-          <td class="px-4 py-2">${cweBadge(row.cweType)}</td>
-          <td class="px-4 py-2">${verdictBadge(row.verdict)}</td>
-          <td class="px-4 py-2 text-xs font-mono font-semibold ${scoreClass(row.score)}">${row.score != null ? row.score.toFixed(3) : '—'}</td>
-          <td class="px-4 py-2 text-xs text-slate-300 font-mono max-w-xs truncate" title="${esc(row.uri)}">${esc(row.uri) || '—'}</td>
-        </tr>
-      `).join('');
-    } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-red-400 text-sm">Error: ${esc(e.message)}</td></tr>`;
-    }
-  }
-
-  function syncPagination() {
-    const total = Math.max(1, Math.ceil(totalElements / PAGE_SIZE));
-    document.getElementById('pageInfo').textContent = `Page ${currentPage + 1} / ${total}`;
-    document.getElementById('btnPrev').disabled = currentPage === 0;
-    document.getElementById('btnNext').disabled = (currentPage + 1) * PAGE_SIZE >= totalElements;
-  }
-
-  function changePage(delta) {
-    currentPage = Math.max(0, currentPage + delta);
-    loadAttacks();
-  }
-
-  // ── Detail ─────────────────────────────────────────────
-  async function selectAttack(id, rowEl) {
-    // Toggle off if same row clicked
-    if (selectedId === id) { closeDetail(); return; }
-
-    document.querySelectorAll('#attackTable tr').forEach(r => {
-      r.classList.remove('row-selected');
-      r.setAttribute('aria-pressed', 'false');
-    });
-    rowEl.classList.add('row-selected');
-    rowEl.setAttribute('aria-pressed', 'true');
-    selectedId = id;
-
-    const panel = document.getElementById('detailPanel');
-    panel.classList.remove('hidden');
-    document.getElementById('detailMeta').innerHTML = '<div class="col-span-4 text-slate-500 text-xs">Loading…</div>';
-    document.getElementById('detailRaw').textContent = 'Loading…';
-    document.getElementById('detailRecs').innerHTML  = '<p class="text-slate-500 text-xs italic">Loading recommendations…</p>';
-
-    try {
-      const [dRes, rRes] = await Promise.all([
-        fetch(`/api/attacks/${id}`),
-        fetch(`/api/recommendations?attackLogId=${id}`)
-      ]);
-      const detail = await dRes.json();
-      const recs   = await rRes.json();
-
-      // Meta cards
-      document.getElementById('detailMeta').innerHTML = `
-        <div class="bg-slate-800 border border-slate-700/60 rounded-lg px-3 py-2">
-          <p class="text-slate-500 text-xs mb-1">CWE Type</p>
-          ${cweBadge(detail.cweType)}
-        </div>
-        <div class="bg-slate-800 border border-slate-700/60 rounded-lg px-3 py-2">
-          <p class="text-slate-500 text-xs mb-1">Verdict</p>
-          ${verdictBadge(detail.verdict)}
-        </div>
-        <div class="bg-slate-800 border border-slate-700/60 rounded-lg px-3 py-2">
-          <p class="text-slate-500 text-xs mb-1">Score</p>
-          <p class="text-sm font-mono font-bold ${scoreClass(detail.classificationScore)}">${detail.classificationScore?.toFixed(4) ?? '—'}</p>
-        </div>
-        <div class="bg-slate-800 border border-slate-700/60 rounded-lg px-3 py-2">
-          <p class="text-slate-500 text-xs mb-1">Source IP</p>
-          <p class="text-sm font-mono text-slate-300">${esc(detail.sourceIp) || '—'}</p>
-        </div>
-      `;
-
-      // Raw payload
-      document.getElementById('detailRaw').textContent = detail.rawPayload || '(empty)';
-
-      // Recommendations
-      if (!recs?.length) {
-        document.getElementById('detailRecs').innerHTML =
-          '<p class="text-slate-500 text-xs italic">No Semgrep recommendations found. ' +
-          'The Feedback Bridge may still be processing, or no matching Semgrep patterns were detected.</p>';
-      } else {
-        document.getElementById('detailRecs').innerHTML = recs.map(rec => `
-          <div class="bg-slate-800 border border-slate-700/60 rounded-lg p-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <div class="flex items-center gap-2 flex-wrap">
-                ${cweBadge(rec.cweType)}
-                <span class="text-xs text-slate-400 font-mono">${esc(rec.pattern)}</span>
+            <!-- Raw Input -->
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Raw Input</p>
+              <div class="bg-slate-950 border border-slate-700/60 rounded-lg p-3 overflow-x-auto">
+                <pre id="detailRaw" class="text-xs text-emerald-300 font-mono whitespace-pre-wrap break-all"></pre>
               </div>
-              ${rec.filePath
-                ? `<span class="text-xs font-mono text-blue-400">${esc(rec.filePath)}${rec.lineNumber != null ? ':' + rec.lineNumber : ''}</span>`
-                : ''}
             </div>
-            <pre class="suggestion bg-slate-950 border border-slate-700/40 rounded-md p-3 text-slate-200 overflow-x-auto">${esc(rec.suggestion)}</pre>
+
+            <!-- Semgrep 추천 -->
+            <div>
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">🔍 Semgrep Recommendations</p>
+              <div id="detailRecs" class="space-y-3"></div>
+            </div>
           </div>
-        `).join('');
-      }
+        </div>
+      </div>
 
-      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } catch (e) {
-      document.getElementById('detailRecs').innerHTML =
-        `<p class="text-red-400 text-xs">Failed to load detail: ${esc(e.message)}</p>`;
-    }
-  }
+    </main>
+  </div>
 
-  function closeDetail() {
-    selectedId = null;
-    document.querySelectorAll('#attackTable tr').forEach(r => {
-      r.classList.remove('row-selected');
-      r.setAttribute('aria-pressed', 'false');
-    });
-    document.getElementById('detailPanel').classList.add('hidden');
-  }
-
-  // ── Filter actions ─────────────────────────────────────
-  function applyFilter() {
-    currentPage = 0;
-    closeDetail();
-    loadAttacks();
-  }
-
-  function resetFilter() {
-    ['filterCwe', 'filterVerdict'].forEach(id => document.getElementById(id).value = '');
-    ['filterFrom', 'filterTo'].forEach(id => document.getElementById(id).value = '');
-    currentPage = 0;
-    closeDetail();
-    loadAll();
-  }
-
-  // ── Auto refresh ───────────────────────────────────────
-  function toggleAutoRefresh() {
-    if (document.getElementById('autoRefresh').checked) {
-      autoRefreshTimer = setInterval(loadAll, 30000);
-    } else {
-      clearInterval(autoRefreshTimer);
-      autoRefreshTimer = null;
-    }
-  }
-
-  // ── Load all ───────────────────────────────────────────
-  async function loadAll() {
-    await Promise.all([loadStats(), loadAttacks()]);
-    document.getElementById('lastUpdated').textContent =
-      new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  }
-
-  loadAll();
-</script>
+  <script src="/api/dashboard.js"></script>
 </body>
 </html>

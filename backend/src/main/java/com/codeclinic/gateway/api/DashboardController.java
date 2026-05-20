@@ -42,6 +42,26 @@ public class DashboardController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    @GetMapping(value = "/dashboard.js", produces = "application/javascript")
+    public Mono<ResponseEntity<byte[]>> dashboardJs() {
+        return Mono.fromCallable(() -> {
+            byte[] js = new ClassPathResource("static/dashboard.js").getInputStream().readAllBytes();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("application/javascript"))
+                    .body(js);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @GetMapping(value = "/dashboard.css", produces = "text/css")
+    public Mono<ResponseEntity<byte[]>> dashboardCss() {
+        return Mono.fromCallable(() -> {
+            byte[] css = new ClassPathResource("static/dashboard.css").getInputStream().readAllBytes();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType("text/css"))
+                    .body(css);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
     @GetMapping("/attacks")
     public Mono<AttackPageResponse> listAttacks(
             @RequestParam(required = false) String  cweLabel,

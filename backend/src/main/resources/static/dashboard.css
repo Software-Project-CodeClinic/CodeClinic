@@ -1,0 +1,28 @@
+/* ── CWE 배지 ──────────────────────────────────────────── */
+.cwe-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.cwe-89 { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.35); }
+.cwe-79 { background: rgba(219,39,119,.15); color: #f472b6; border: 1px solid rgba(219,39,119,.35); }
+.cwe-78 { background: rgba(234,88,12,.15);  color: #fb923c; border: 1px solid rgba(234,88,12,.35); }
+.cwe-22 { background: rgba(8,145,178,.15);  color: #22d3ee; border: 1px solid rgba(8,145,178,.35); }
+
+/* ── 선택된 테이블 행 ────────────────────────────────── */
+.row-selected { background: #1e3a5f !important; }
+
+/* ── Semgrep 추천 코드 블록 ─────────────────────────── */
+pre.suggestion {
+  white-space: pre-wrap;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* ── 스크롤바 ───────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: #1e293b; }
+::-webkit-scrollbar-thumb  { background: #475569; border-radius: 3px; }
