@@ -26,6 +26,7 @@ Cold-Path 주의:
 사용법:
   python scripts/e2e_test.py                              # test.csv, 전체
   python scripts/e2e_test.py --limit 100                  # 처음 100건
+  python scripts/e2e_test.py --decode-uri                 # URI 디코딩 후 전송 (eval_ai.py 기준)
   python scripts/e2e_test.py --no-db-check                # DB 검증 생략
   python scripts/e2e_test.py --demo                       # Cold-Path (하드코딩 페이로드)
   python scripts/e2e_test.py --demo --demo-csv test.csv   # Cold-Path (CSV 샘플링)
@@ -164,7 +165,7 @@ def build_demo_attacks_from_csv(csv_path: str, samples_per_cwe: int = 3, seed: i
 #   true ATTACK → BLOCK 또는 MONITOR
 
 
-def parse_request_line(text: str):
+def parse_request_line(text: str, decode_uri: bool = False):
     """test.csv text 컬럼 → (method, path) 추출."""
     text = text.strip()
     parts = text.split(" ", 2)
@@ -180,6 +181,9 @@ def parse_request_line(text: str):
     else:
         # "HTTP/1.1" 이 path에 붙어있는 경우 제거
         path = raw_path.split(" ")[0]
+
+    if decode_uri:
+        path = urllib.parse.unquote_plus(path)
 
     return method, path or "/"
 
@@ -323,6 +327,8 @@ def main():
     parser.add_argument("--db",       default=DB_DSN)
     parser.add_argument("--limit",    type=int, default=None)
     parser.add_argument("--no-db-check", action="store_true")
+    parser.add_argument("--decode-uri", action="store_true",
+                        help="URI를 URL 디코딩 후 게이트웨이에 전달 (eval_ai.py 기준, hot-path 모드 전용)")
     parser.add_argument("--demo",     action="store_true",
                         help="Cold-Path 전체 검증 모드 (VulnerableShopController 공격)")
     parser.add_argument("--demo-csv", default=None, metavar="CSV",
@@ -383,10 +389,14 @@ def main():
     responses = []   # (true_label, status_code, latency_ms)
     errors    = 0
 
+    decode_uri = args.decode_uri
+    mode_label = "URI 디코딩 O" if decode_uri else "URI 디코딩 X (원본)"
+    print(f"  모드: {mode_label}\n")
+
     t_start = time.time()
     for i, row in enumerate(rows, 1):
         true_label = int(row["label"])
-        method, path = parse_request_line(row["text"])
+        method, path = parse_request_line(row["text"], decode_uri=decode_uri)
 
         t0   = time.time()
         resp = send_request(session, method, path)
