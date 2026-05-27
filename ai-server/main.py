@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from predict import WAFPredictor
 
-MODEL_PATH = os.environ.get("MODEL_PATH", "models/case_f/final")
+MODEL_PATH = os.environ.get("MODEL_PATH", "models/case_g/final")
 _predictor: WAFPredictor | None = None
 
 
