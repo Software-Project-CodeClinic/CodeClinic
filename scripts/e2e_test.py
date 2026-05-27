@@ -26,6 +26,7 @@ Cold-Path 주의:
 사용법:
   python scripts/e2e_test.py                              # test.csv, 전체
   python scripts/e2e_test.py --limit 100                  # 처음 100건
+  python scripts/e2e_test.py --samples-per-label 50       # 레이블별 50건씩 균등 샘플링
   python scripts/e2e_test.py --decode-uri                 # URI 디코딩 후 전송 (eval_ai.py 기준)
   python scripts/e2e_test.py --no-db-check                # DB 검증 생략
   python scripts/e2e_test.py --demo                       # Cold-Path (하드코딩 페이로드)
@@ -160,9 +161,19 @@ def build_demo_attacks_from_csv(csv_path: str, samples_per_cwe: int = 3, seed: i
     attacks.extend(_CWE78_FALLBACK)
     return attacks
 
-# verdict → 기대 범주 (레이블 기준)
-#   true NORMAL → PASS
-#   true ATTACK → BLOCK 또는 MONITOR
+def sample_by_label(rows: list, samples_per_label: int, seed: int = 42) -> list:
+    """레이블별 균등 샘플링 (build_demo_attacks_from_csv 방식 준용)."""
+    import random
+    rng = random.Random(seed)
+    by_label = defaultdict(list)
+    for row in rows:
+        by_label[int(row["label"])].append(row)
+    result = []
+    for label in sorted(by_label):
+        group = by_label[label][:]
+        rng.shuffle(group)
+        result.extend(group[:samples_per_label])
+    return result
 
 
 def parse_request_line(text: str, decode_uri: bool = False):
@@ -325,7 +336,13 @@ def main():
     parser.add_argument("--csv",      default="test.csv")
     parser.add_argument("--gateway",  default=GATEWAY)
     parser.add_argument("--db",       default=DB_DSN)
-    parser.add_argument("--limit",    type=int, default=None)
+    parser.add_argument("--limit",            type=int, default=None,
+                        help="처음 N건만 사용 (레이블 순서 유지)")
+    parser.add_argument("--samples-per-label", type=int, default=None,
+                        dest="samples_per_label",
+                        help="레이블별 균등 샘플링 N건 (--limit 적용 후)")
+    parser.add_argument("--seed",             type=int, default=42,
+                        help="샘플링 난수 시드 (기본: 42)")
     parser.add_argument("--no-db-check", action="store_true")
     parser.add_argument("--decode-uri", action="store_true",
                         help="URI를 URL 디코딩 후 게이트웨이에 전달 (eval_ai.py 기준, hot-path 모드 전용)")
@@ -375,10 +392,14 @@ def main():
         rows = list(csv.DictReader(f))
     if args.limit:
         rows = rows[:args.limit]
+    if args.samples_per_label:
+        rows = sample_by_label(rows, args.samples_per_label, seed=args.seed)
     total = len(rows)
 
     label_counts = Counter(int(r["label"]) for r in rows)
-    print(f"[ 테스트 데이터: {args.csv} ({total}건) ]")
+    sampling_note = (f"레이블별 {args.samples_per_label}건 균등 샘플링, seed={args.seed}"
+                     if args.samples_per_label else "전체")
+    print(f"[ 테스트 데이터: {args.csv} ({total}건 / {sampling_note}) ]")
     for lbl, cnt in sorted(label_counts.items()):
         print(f"  {LABEL_MAP.get(lbl, '?'):>8} ({lbl}): {cnt}건")
     print()
