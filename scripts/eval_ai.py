@@ -6,17 +6,17 @@ AI 모델 정확도 평가 스크립트 (Spring/Docker 불필요)
   cd ai-server && uvicorn main:app --host 0.0.0.0 --port 8000
 
 사용법:
-  python scripts/eval_ai.py                        # test.csv, 전체
-  python scripts/eval_ai.py --limit 200            # 처음 200건만
-  python scripts/eval_ai.py --csv test_with_headers.csv
-  python scripts/eval_ai.py --url http://localhost:8000
+  python scripts/eval_ai.py                   # test_with_headers.csv, 전체, URI 디코딩 on
+  python scripts/eval_ai.py --limit 200       # 처음 200건
+  python scripts/eval_ai.py --csv test.csv    # URI-only CSV (Model F 비교용)
+  python scripts/eval_ai.py --no-decode-uri   # 디코딩 비활성화
 """
 import argparse
 import csv
 import sys
 import time
 from collections import Counter, defaultdict
-from urllib.parse import unquote_plus
+from urllib.parse import unquote_plus, urlparse
 
 try:
     import requests
@@ -27,27 +27,32 @@ LABEL_MAP = {0: "NORMAL", 1: "CWE-89", 2: "CWE-79", 3: "CWE-78", 4: "CWE-22"}
 # WAF 분류: 0=NORMAL, else=ATTACK
 ATTACK_LABELS = {1, 2, 3, 4}
 
-# raw_input 조합 (인터페이스 계약 준수)
-def build_raw_input(text: str, decode_uri: bool = False) -> str:
+def build_raw_input(text: str, decode_uri: bool = True) -> str:
+    """Full HTTP Request 포맷 (Model G용).
+
+    test_with_headers.csv 첫 줄의 절대 URL을 상대 경로로 정규화.
+    원본 헤더와 body는 그대로 보존.
+    """
     text = text.strip()
-    # test.csv: "GET /path..." 형태 → 인터페이스 계약 형식으로 래핑
-    parts = text.split(" ", 2)
-    method = parts[0] if len(parts) >= 1 else "GET"
-    rest   = parts[1] if len(parts) >= 2 else "/"
-    # 절대 URL → 경로만 추출
-    if rest.startswith("http"):
-        from urllib.parse import urlparse
-        p = urlparse(rest)
-        rest = p.path + (("?" + p.query) if p.query else "")
-    uri = rest.split(" ")[0]  # "HTTP/1.1" 이후 제거
+    sep = "\r\n" if "\r\n" in text else "\n"
+    first_line, _, remainder = text.partition(sep)
+
+    tokens = first_line.split(" ", 2)
+    method  = tokens[0] if tokens else "GET"
+    raw_url = tokens[1] if len(tokens) >= 2 else "/"
+    proto   = tokens[2] if len(tokens) >= 3 else "HTTP/1.1"
+
+    if raw_url.startswith("http"):
+        p = urlparse(raw_url)
+        uri = p.path + (("?" + p.query) if p.query else "")
+    else:
+        uri = raw_url.split(" ")[0]
+
     if decode_uri:
         uri = unquote_plus(uri)
-    return (
-        f"{method} {uri} HTTP/1.1\r\n"
-        "User-Agent: eval-script/1.0\r\n"
-        "Content-Type: \r\n"
-        "\r\n"
-    )
+
+    first_line_new = f"{method} {uri} {proto}"
+    return (first_line_new + sep + remainder) if remainder else first_line_new
 
 
 def predict(session, url: str, raw_input: str) -> dict | None:
@@ -66,11 +71,12 @@ def predict(session, url: str, raw_input: str) -> dict | None:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv",        default="test.csv")
+    parser.add_argument("--csv",        default="test_with_headers.csv")
     parser.add_argument("--url",        default="http://localhost:8000")
     parser.add_argument("--limit",      type=int, default=None)
-    parser.add_argument("--decode-uri", action="store_true",
-                        help="URI를 URL 디코딩 후 모델에 전달 (FeatureExtractor 변경 반영)")
+    parser.add_argument("--decode-uri", default=True,
+                        action=argparse.BooleanOptionalAction,
+                        help="URI 디코딩 (기본: on). --no-decode-uri로 비활성화.")
     args = parser.parse_args()
 
     # AI 서버 health check
