@@ -24,10 +24,11 @@ Cold-Path 주의:
     /shop/ping    CWE-78 (Command Injection, 모델 미학습 — BLOCK 미보장)
 
 사용법:
-  python scripts/e2e_test.py                              # test.csv, 전체
+  python scripts/e2e_test.py                              # case_g, test.csv, 전체
+  python scripts/e2e_test.py --model case_f               # case_f 모델로 평가
   python scripts/e2e_test.py --limit 100                  # 처음 100건
   python scripts/e2e_test.py --samples-per-label 50       # 레이블별 50건씩 균등 샘플링
-  python scripts/e2e_test.py --decode-uri                 # URI 디코딩 후 전송 (eval_ai.py 기준)
+  python scripts/e2e_test.py --decode-uri                 # URI 디코딩 후 전송
   python scripts/e2e_test.py --no-db-check                # DB 검증 생략
   python scripts/e2e_test.py --demo                       # Cold-Path (하드코딩 페이로드)
   python scripts/e2e_test.py --demo --demo-csv test.csv   # Cold-Path (CSV 샘플링)
@@ -35,6 +36,8 @@ Cold-Path 주의:
 """
 import argparse
 import csv
+import os
+import subprocess
 import sys
 
 # Windows 콘솔이 cp949일 때 유니코드 출력 깨짐 방지
@@ -99,6 +102,51 @@ _CWE78_FALLBACK = [
     ("GET", "/shop/ping?host=localhost%3B+id"),
     ("GET", "/shop/ping?host=127.0.0.1+%26%26+whoami"),
 ]
+
+
+def _start_ai_server(model: str, url: str) -> None:
+    from urllib.parse import urlparse as _urlparse
+    port = _urlparse(url).port or 8000
+    ai_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ai-server")
+    env = {**os.environ, "MODEL_PATH": os.path.join("models", model, "final")}
+    subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(port)],
+        cwd=ai_dir, env=env,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    print(f"  AI 서버 기동 중 (모델: {model})", end="", flush=True)
+    for _ in range(20):
+        time.sleep(1)
+        print(".", end="", flush=True)
+        try:
+            if requests.get(f"{url}/health", timeout=1).ok:
+                print()
+                return
+        except Exception:
+            pass
+    print()
+    sys.exit(f"  ✗ AI 서버 기동 실패 ({model})")
+
+
+def _check_ai_server(model: str, url: str) -> None:
+    """AI 서버 모델 검증. 미기동 시 자동 시작, 모델 불일치 시 오류."""
+    try:
+        r = requests.get(f"{url}/health", timeout=3)
+        r.raise_for_status()
+        running_model = r.json().get("model", "unknown")
+        if running_model != model:
+            sys.exit(
+                f"  ✗ AI 서버 모델 불일치: 실행 중='{running_model}', 요청='{model}'\n"
+                f"    서버를 재시작하거나 --model {running_model} 옵션을 사용하세요."
+            )
+        print(f"  ✓ AI 서버: {url}  |  모델: {running_model}")
+    except requests.exceptions.ConnectionError:
+        _start_ai_server(model, url)
+        print(f"  ✓ AI 서버 자동 시작: {url}  |  모델: {model}")
+    except SystemExit:
+        raise
+    except Exception:
+        print(f"  ! AI 서버({url}) 연결 실패 → 스킵")
 
 
 def _extract_raw_query(text: str) -> str | None:
@@ -253,6 +301,7 @@ def run_demo(args):
         print(f"  ✓ Spring Gateway: {args.gateway}")
     except Exception:
         sys.exit(f"  ✗ Spring Gateway({args.gateway}) 연결 실패. bootRun --args='--spring.profiles.active=demo' 확인.")
+    _check_ai_server(args.model, args.ai_url)
 
     conn = None
     if not args.no_db_check and HAS_PSYCOPG2:
@@ -343,6 +392,10 @@ def main():
                         help="레이블별 균등 샘플링 N건 (--limit 적용 후)")
     parser.add_argument("--seed",             type=int, default=42,
                         help="샘플링 난수 시드 (기본: 42)")
+    parser.add_argument("--model", default="case_g",
+                        help="평가할 AI 모델 (기본: case_g). 서버 미기동 시 자동 시작.")
+    parser.add_argument("--ai-url", default="http://localhost:8000", dest="ai_url",
+                        help="AI 서버 URL (기본: http://localhost:8000)")
     parser.add_argument("--no-db-check", action="store_true")
     parser.add_argument("--decode-uri", action="store_true",
                         help="URI를 URL 디코딩 후 게이트웨이에 전달 (eval_ai.py 기준, hot-path 모드 전용)")
@@ -366,6 +419,7 @@ def main():
         print(f"  ✓ Spring Gateway: {args.gateway}")
     except Exception:
         sys.exit(f"  ✗ Spring Gateway({args.gateway}) 연결 실패. bootRun을 먼저 실행하세요.")
+    _check_ai_server(args.model, args.ai_url)
 
     conn = None
     if not args.no_db_check and HAS_PSYCOPG2:
