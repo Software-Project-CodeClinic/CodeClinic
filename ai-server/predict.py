@@ -34,7 +34,8 @@ class WAFPredictor:
 
         idx = int(probs.argmax())
         label_key = f"LABEL_{idx}"
+        cwe_label = _LABEL_MAP.get(label_key, "NORMAL")
         return {
             "classificationScore": float(probs[idx]),
-            "cweLabel": _LABEL_MAP[label_key],
+            "cweLabel": cwe_label,
         }
