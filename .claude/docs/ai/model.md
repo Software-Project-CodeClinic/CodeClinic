@@ -9,8 +9,8 @@
 | 베이스 모델 | `distilbert-base-uncased` |
 | 분류 클래스 | 5클래스 (NORMAL, CWE-89, CWE-79, CWE-78, CWE-22) |
 | 학습 환경 | RTX 3060 12GB, Ubuntu 24.04 (WSL2), PyTorch 2.5.1 |
-| 하이퍼파라미터 | max_length=128, lr=2e-5, batch=16, epoch=5 |
-| 채택 케이스 | case_g (정확도 90.23%, `--decode-uri` 모드 권장) |
+| 하이퍼파라미터 | max_length=256, lr=2e-5, batch=64, epoch=15 |
+| 채택 케이스 | case_g (`--decode-uri` 모드 권장) |
 
 ## FastAPI 서버
 
