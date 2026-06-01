@@ -37,28 +37,31 @@ public class DashboardController {
     @GetMapping(value = "/dashboard", produces = MediaType.TEXT_HTML_VALUE)
     public Mono<ResponseEntity<byte[]>> dashboard() {
         return Mono.fromCallable(() -> {
-            byte[] html = new ClassPathResource("static/dashboard.html").getInputStream().readAllBytes();
-            return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+            try (var in = new ClassPathResource("static/dashboard.html").getInputStream()) {
+                return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(in.readAllBytes());
+            }
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @GetMapping(value = "/dashboard.js", produces = "application/javascript")
     public Mono<ResponseEntity<byte[]>> dashboardJs() {
         return Mono.fromCallable(() -> {
-            byte[] js = new ClassPathResource("static/dashboard.js").getInputStream().readAllBytes();
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType("application/javascript"))
-                    .body(js);
+            try (var in = new ClassPathResource("static/dashboard.js").getInputStream()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("application/javascript"))
+                        .body(in.readAllBytes());
+            }
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
     @GetMapping(value = "/dashboard.css", produces = "text/css")
     public Mono<ResponseEntity<byte[]>> dashboardCss() {
         return Mono.fromCallable(() -> {
-            byte[] css = new ClassPathResource("static/dashboard.css").getInputStream().readAllBytes();
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType("text/css"))
-                    .body(css);
+            try (var in = new ClassPathResource("static/dashboard.css").getInputStream()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType("text/css"))
+                        .body(in.readAllBytes());
+            }
         }).subscribeOn(Schedulers.boundedElastic());
     }
 

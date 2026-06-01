@@ -43,5 +43,4 @@ management:
 
 logging:
   level:
-    com.codeclinic.gateway.feedback: DEBUG
-    com.codeclinic.gateway.log: DEBUG
+    com.codeclinic: INFO

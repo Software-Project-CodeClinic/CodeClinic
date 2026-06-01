@@ -157,7 +157,7 @@ def main():
 
         # cweLabel → int 역매핑
         cwe_to_int = {v: k for k, v in LABEL_MAP.items()}
-        pred_label = cwe_to_int.get(result["cweLabel"], -1)
+        pred_label = cwe_to_int.get(result.get("cweLabel"), -1)
 
         confusion[true_label][pred_label] += 1
         if true_label == pred_label:
@@ -165,7 +165,8 @@ def main():
 
         # 진행 표시
         if i % 100 == 0 or i == len(rows):
-            pct = correct / (i - errors) * 100
+            seen = i - errors
+            pct = correct / seen * 100 if seen > 0 else 0.0
             print(f"  [{i:>4}/{len(rows)}] 정확도 {pct:.1f}%  avg {sum(latencies)/len(latencies):.1f}ms")
 
     # ── 결과 출력 ──────────────────────────────────────────────────────────

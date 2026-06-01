@@ -21,12 +21,13 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class WebClientInferenceClient implements InferenceClient {
 
-    private final WebClient    inferenceWebClient;
-    private final WafProperties wafProperties;
+    private final WebClient        inferenceWebClient;
+    private final WafProperties    wafProperties;
+    private final FeatureExtractor featureExtractor;
 
     @Override
     public Mono<InferenceResponse> score(FeatureVector featureVector) {
-        String rawInput = buildRawInput(featureVector);
+        String rawInput = featureExtractor.buildRawInput(featureVector);
 
         return inferenceWebClient.post()
                 .uri("/predict")
@@ -36,15 +37,6 @@ public class WebClientInferenceClient implements InferenceClient {
                 .timeout(Duration.ofMillis(wafProperties.aiServer().timeoutMs()))
                 .doOnError(e -> log.warn("InferenceClient error [{}]: {}", e.getClass().getSimpleName(), e.getMessage()))
                 .onErrorReturn(InferenceResponse.PASS_RESPONSE);
-    }
-
-    // 인터페이스 계약 형식: {method} {uri} HTTP/1.1\r\n{헤더}\r\n\r\n{body}
-    private String buildRawInput(FeatureVector fv) {
-        return fv.method() + " " + fv.uri() + " HTTP/1.1\r\n"
-             + "User-Agent: "   + fv.userAgent()   + "\r\n"
-             + "Content-Type: " + fv.contentType() + "\r\n"
-             + "\r\n"
-             + fv.rawBody();
     }
 
     private record PredictRequest(String raw_input) {}

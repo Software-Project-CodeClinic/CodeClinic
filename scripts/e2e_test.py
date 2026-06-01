@@ -474,7 +474,7 @@ def main():
         method, path = parse_request_line(row["text"], decode_uri=decode_uri)
 
         t0   = time.time()
-        resp = send_request(session, method, path)
+        resp = send_request(session, method, path, gateway=args.gateway)
         ms   = (time.time() - t0) * 1000
 
         if resp is None:

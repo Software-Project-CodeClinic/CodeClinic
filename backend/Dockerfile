@@ -23,10 +23,13 @@ RUN apt-get update -qq \
  && pip3 install semgrep --break-system-packages -q \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/build/libs/gateway-0.0.1-SNAPSHOT.jar app.jar
+RUN groupadd -r app && useradd -r -g app app
+
+COPY --from=builder --chown=app:app /app/build/libs/gateway-0.0.1-SNAPSHOT.jar app.jar
 
 # Semgrep 커스텀 룰 (cwe-79-xss.yml 등)
-COPY --from=builder /app/semgrep-rules/ /app/semgrep-rules/
+COPY --from=builder --chown=app:app /app/semgrep-rules/ /app/semgrep-rules/
 
+USER app
 EXPOSE 8181
 ENTRYPOINT ["java", "-jar", "app.jar"]

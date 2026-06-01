@@ -21,9 +21,6 @@ CREATE TABLE IF NOT EXISTS attack_logs (
 -- hypertable 변환: timestamp 기준으로 자동 파티셔닝 (시계열 범위 쿼리 최적화)
 SELECT create_hypertable('attack_logs', 'timestamp');
 
--- hypertable UNIQUE 인덱스는 파티션 키(timestamp)를 반드시 포함해야 한다
-CREATE UNIQUE INDEX ON attack_logs (id, timestamp);
-
 -- 대시보드 조회 패턴에 맞는 복합 인덱스
 CREATE INDEX ON attack_logs (cwe_type, timestamp DESC);
 CREATE INDEX ON attack_logs (source_ip, timestamp DESC);

@@ -28,9 +28,10 @@ class WebClientInferenceClientTest {
         WafProperties props = new WafProperties(
                 new WafProperties.Threshold(0.8, 0.5),
                 new WafProperties.AiServer(baseUrl, timeoutMs),
-                "src/main/java"
+                "src/main/java",
+                new WafProperties.Semgrep("", "semgrep-rules")
         );
-        return new WebClientInferenceClient(webClient, props);
+        return new WebClientInferenceClient(webClient, props, new FeatureExtractor());
     }
 
     @Test

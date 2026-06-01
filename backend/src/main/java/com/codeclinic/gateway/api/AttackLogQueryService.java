@@ -95,8 +95,8 @@ public class AttackLogQueryService {
     private String buildWhere(String cweLabel, String verdict, Instant from, Instant to,
                                List<Object> params) {
         StringBuilder where = new StringBuilder(" WHERE 1=1");
-        if (cweLabel != null) { where.append(" AND cwe_type = ?");   params.add(cweLabel); }
-        if (verdict  != null) { where.append(" AND verdict = ?");    params.add(verdict); }
+        if (cweLabel != null && !cweLabel.isBlank()) { where.append(" AND cwe_type = ?");   params.add(cweLabel); }
+        if (verdict  != null && !verdict.isBlank())  { where.append(" AND verdict = ?");    params.add(verdict); }
         if (from     != null) { where.append(" AND timestamp >= ?"); params.add(Timestamp.from(from)); }
         if (to       != null) { where.append(" AND timestamp <= ?"); params.add(Timestamp.from(to)); }
         return where.toString();

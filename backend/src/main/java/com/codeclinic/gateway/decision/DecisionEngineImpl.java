@@ -59,23 +59,24 @@ public class DecisionEngineImpl implements DecisionEngine {
     }
 
     private void saveLog(ServerWebExchange exchange, InferenceResponse response, Verdict verdict) {
-        String remoteAddress = exchange.getRequest().getRemoteAddress() != null
-                ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress()
-                : "unknown";
-
-        AttackLog entry = AttackLog.builder()
-                .id(UUID.randomUUID())
-                .timestamp(Instant.now())
-                .sourceIp(remoteAddress)
-                .method(exchange.getRequest().getMethod().name())
-                .uri(exchange.getRequest().getURI().getRawPath())
-                .cweType(response.cweLabel())
-                .score(response.classificationScore())
-                .verdict(verdict.name())
-                .rawInput("")   // FeatureExtractor에서 buildRawInput()로 구성 가능하나 hot-path 지연 최소화를 위해 생략
-                .build();
-
         try {
+            var addr = exchange.getRequest().getRemoteAddress();
+            String remoteAddress = (addr != null && addr.getAddress() != null)
+                    ? addr.getAddress().getHostAddress()
+                    : "unknown";
+
+            AttackLog entry = AttackLog.builder()
+                    .id(UUID.randomUUID())
+                    .timestamp(Instant.now())
+                    .sourceIp(remoteAddress)
+                    .method(exchange.getRequest().getMethod().name())
+                    .uri(exchange.getRequest().getURI().getRawPath())
+                    .cweType(response.cweLabel())
+                    .score(response.classificationScore())
+                    .verdict(verdict.name())
+                    .rawInput("")   // FeatureExtractor에서 buildRawInput()로 구성 가능하나 hot-path 지연 최소화를 위해 생략
+                    .build();
+
             attackLogService.save(entry);
         } catch (Exception e) {
             log.warn("saveLog submit failed, ignoring to protect Hot Path [{}]: {}",
