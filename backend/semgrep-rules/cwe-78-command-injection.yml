@@ -1,0 +1,30 @@
+rules:
+  - id: java-cmdi-runtime-exec-string-concat
+    patterns:
+      - pattern-either:
+          - pattern: Runtime.getRuntime().exec($A + $B)
+          - pattern: $RT.exec($A + $B)
+          - pattern: Runtime.getRuntime().exec(new String[]{..., $A + $B})
+    message: >
+      Command injection: user input concatenated directly into Runtime.exec().
+      Replace with ProcessBuilder using an explicit argument array to prevent
+      shell interpretation.
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-78
+
+  - id: java-cmdi-processbuilder-shell-inject
+    patterns:
+      - pattern-either:
+          - pattern: new ProcessBuilder("sh", "-c", $A + $B)
+          - pattern: new ProcessBuilder("bash", "-c", $A + $B)
+          - pattern: new ProcessBuilder("cmd.exe", "/c", $A + $B)
+    message: >
+      Command injection: shell (-c/cmd /c) invoked with concatenated user input.
+      Pass each command token as a separate ProcessBuilder argument and validate
+      inputs with a whitelist to prevent shell injection.
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: CWE-78

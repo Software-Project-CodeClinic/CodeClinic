@@ -1,0 +1,21 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        # demo 전용 라우트: VulnerableShopController 경로를 게이트웨이가 먼저 처리
+        # WafFilter가 실행된 후 BLOCK → 403, PASS → httpbin.org 프록시
+        - id: demo-shop
+          uri: http://httpbin.org
+          predicates:
+            - Path=/shop/**
+        # application.yml의 upstream-dummy (/**) 는 그대로 상속
+
+# demo 모드에서는 AI 서버 타임아웃을 2000ms로 높임 (JVM 웜업, 데모 신뢰성 확보)
+waf:
+  ai-server:
+    timeout-ms: 2000
+
+logging:
+  level:
+    com.codeclinic.gateway.feedback: DEBUG
+    com.codeclinic.gateway.log: DEBUG
